@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0",
+    "react-native-url-polyfill": "^3.0.0",
+    "supabase": "^2.47.2",
+    "text-encoding": "^0.7.0"
+  }
+}
