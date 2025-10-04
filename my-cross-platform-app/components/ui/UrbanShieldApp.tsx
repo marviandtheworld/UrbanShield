@@ -1,32 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  SafeAreaView,
-  StyleSheet,
-  TouchableOpacity,
-  Text,
-  StatusBar,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Session } from '@supabase/supabase-js';
+import React, { useEffect, useState } from 'react';
+import {
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { Colors } from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { supabase } from '../../lib/supabase';
 
+import { UserType } from '../../lib/userTypes';
 import AuthModal from './AuthModal';
-import SettingsModal from './SettingsModal';
+import ChatBot from './ChatBot';
 import CreateIncidentModal from './CreateIncidentModal';
 import CustomMapView from './CustomMapView';
-import NewsView from './NewsView';
-import LiveView from './LiveView';
-import ProfileView from './ProfileView';
-import UserTypeDashboard from './UserTypeDashboard';
 import DebugPanel from './DebugPanel';
-import SignInTest from './SignInTest';
-import { UserType } from '../../lib/userTypes';
+import GuestHomeboard from './GuestHomeboard';
+import NewsView from './NewsView';
+import ProfileView from './ProfileView';
+import SettingsModal from './SettingsModal';
+import UserTypeDashboard from './UserTypeDashboard';
 
 
-type ViewType = 'dashboard' | 'map' | 'news' | 'live' | 'profile' | 'test';
+type ViewType = 'dashboard' | 'map' | 'news' | 'profile';
 
 export default function UrbanShieldApp() {
+  const { isDark } = useTheme();
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -36,6 +39,8 @@ export default function UrbanShieldApp() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [showChatBot, setShowChatBot] = useState(false);
+  const [newsRefreshTrigger, setNewsRefreshTrigger] = useState(0);
 
   useEffect(() => {
     console.log('🔍 UrbanShieldApp: Initializing auth state...');
@@ -152,15 +157,21 @@ export default function UrbanShieldApp() {
   const handleIncidentCreated = () => {
     // Refresh incidents feed or do any necessary updates
     console.log('New incident created');
+    // Trigger refresh of news view
+    setNewsRefreshTrigger(prev => prev + 1);
+    // Switch to news view to show the new incident
+    setActiveView('news');
   };
 
+  const colors = Colors[isDark ? 'dark' : 'light'];
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
       
       {/* Authentication Status Indicator */}
       {!session && (
-        <View style={styles.authStatusBar}>
+        <View style={[styles.authStatusBar, { backgroundColor: colors.error }]}>
           <Text style={styles.authStatusText}>
             Not signed in - Tap any feature to sign in
           </Text>
@@ -181,9 +192,6 @@ export default function UrbanShieldApp() {
               case 'incidents':
                 setActiveView('news');
                 break;
-              case 'live':
-                setActiveView('live');
-                break;
               case 'analytics':
                 // TODO: Implement analytics view
                 break;
@@ -199,6 +207,11 @@ export default function UrbanShieldApp() {
           }}
         />
       )}
+      {activeView === 'dashboard' && !session && (
+        <GuestHomeboard 
+          onGetStarted={() => setShowAuthModal(true)}
+        />
+      )}
       {activeView === 'map' && (
         <CustomMapView 
           session={session}
@@ -210,12 +223,7 @@ export default function UrbanShieldApp() {
           session={session}
           userProfile={userProfile}
           onAuthRequired={handleAuthRequired}
-        />
-      )}
-      {activeView === 'live' && (
-        <LiveView 
-          session={session}
-          onAuthRequired={handleAuthRequired}
+          refreshTrigger={newsRefreshTrigger}
         />
       )}
       {activeView === 'profile' && (
@@ -227,13 +235,10 @@ export default function UrbanShieldApp() {
           onProfileUpdate={() => session && loadUserProfile(session.user.id)}
         />
       )}
-      {activeView === 'test' && (
-        <SignInTest />
-      )}
 
       {/* Floating Action Button - Create Post */}
       <TouchableOpacity 
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: colors.primary }]}
         onPress={handleCreatePost}
       >
         <Ionicons name="add" size={28} color="#fff" />
@@ -241,14 +246,22 @@ export default function UrbanShieldApp() {
 
       {/* Debug Button */}
       <TouchableOpacity 
-        style={styles.debugButton}
+        style={[styles.debugButton, { backgroundColor: colors.secondary }]}
         onPress={() => setShowDebugPanel(true)}
       >
         <Ionicons name="bug" size={20} color="#fff" />
       </TouchableOpacity>
 
+      {/* Chat Bot Button */}
+      <TouchableOpacity 
+        style={[styles.chatButton, { backgroundColor: colors.info }]}
+        onPress={() => setShowChatBot(true)}
+      >
+        <Ionicons name="chatbubble" size={20} color="#fff" />
+      </TouchableOpacity>
+
       {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
+      <View style={[styles.bottomNav, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity 
           style={styles.navItem}
           onPress={() => setActiveView('dashboard')}
@@ -256,12 +269,16 @@ export default function UrbanShieldApp() {
           <Ionicons 
             name="home" 
             size={24} 
-            color={activeView === 'dashboard' ? '#fff' : '#525252'} 
+            color={activeView === 'dashboard' ? colors.primary : colors.secondary} 
           />
-          <Text style={[styles.navText, activeView === 'dashboard' && styles.navTextActive]}>
+          <Text style={[
+            styles.navText, 
+            { color: activeView === 'dashboard' ? colors.primary : colors.secondary },
+            activeView === 'dashboard' && styles.navTextActive
+          ]}>
             Home
           </Text>
-          {activeView === 'dashboard' && <View style={styles.navIndicator} />}
+          {activeView === 'dashboard' && <View style={[styles.navIndicator, { backgroundColor: colors.primary }]} />}
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -271,9 +288,13 @@ export default function UrbanShieldApp() {
           <Ionicons 
             name="newspaper" 
             size={24} 
-            color={activeView === 'news' ? '#fff' : '#525252'} 
+            color={activeView === 'news' ? colors.primary : colors.secondary} 
           />
-          <Text style={[styles.navText, activeView === 'news' && styles.navTextActive]}>
+          <Text style={[
+            styles.navText, 
+            { color: activeView === 'news' ? colors.primary : colors.secondary },
+            activeView === 'news' && styles.navTextActive
+          ]}>
             News
           </Text>
         </TouchableOpacity>
@@ -285,26 +306,17 @@ export default function UrbanShieldApp() {
           <Ionicons 
             name="map" 
             size={24} 
-            color={activeView === 'map' ? '#fff' : '#525252'} 
+            color={activeView === 'map' ? colors.primary : colors.secondary} 
           />
-          <Text style={[styles.navText, activeView === 'map' && styles.navTextActive]}>
+          <Text style={[
+            styles.navText, 
+            { color: activeView === 'map' ? colors.primary : colors.secondary },
+            activeView === 'map' && styles.navTextActive
+          ]}>
             Map
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => setActiveView('live')}
-        >
-          <Ionicons 
-            name="videocam" 
-            size={24} 
-            color={activeView === 'live' ? '#fff' : '#525252'} 
-          />
-          <Text style={[styles.navText, activeView === 'live' && styles.navTextActive]}>
-            Live
-          </Text>
-        </TouchableOpacity>
 
         <TouchableOpacity 
           style={styles.navItem}
@@ -313,26 +325,17 @@ export default function UrbanShieldApp() {
           <Ionicons 
             name="person" 
             size={24} 
-            color={activeView === 'profile' ? '#fff' : '#525252'} 
+            color={activeView === 'profile' ? colors.primary : colors.secondary} 
           />
-          <Text style={[styles.navText, activeView === 'profile' && styles.navTextActive]}>
+          <Text style={[
+            styles.navText, 
+            { color: activeView === 'profile' ? colors.primary : colors.secondary },
+            activeView === 'profile' && styles.navTextActive
+          ]}>
             Profile
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => setActiveView('test')}
-        >
-          <Ionicons 
-            name="bug" 
-            size={24} 
-            color={activeView === 'test' ? '#fff' : '#525252'} 
-          />
-          <Text style={[styles.navText, activeView === 'test' && styles.navTextActive]}>
-            Test
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {/* Modals */}
@@ -351,12 +354,13 @@ export default function UrbanShieldApp() {
             onProfileUpdate={() => loadUserProfile(session.user.id)}
           />
 
-          <CreateIncidentModal
-            visible={showCreateModal}
-            onClose={() => setShowCreateModal(false)}
-            userId={session.user.id}
-            onSuccess={handleIncidentCreated}
-          />
+                  <CreateIncidentModal
+                    visible={showCreateModal}
+                    onClose={() => setShowCreateModal(false)}
+                    userId={session.user.id}
+                    userType={userProfile?.user_type as UserType}
+                    onSuccess={handleIncidentCreated}
+                  />
         </>
       )}
 
@@ -367,6 +371,12 @@ export default function UrbanShieldApp() {
         visible={showDebugPanel}
         onClose={() => setShowDebugPanel(false)}
       />
+
+      {/* Chat Bot */}
+      <ChatBot
+        visible={showChatBot}
+        onClose={() => setShowChatBot(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -374,10 +384,8 @@ export default function UrbanShieldApp() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#000',
   },
   authStatusBar: {
-    backgroundColor: '#ef4444',
     paddingVertical: 8,
     paddingHorizontal: 16,
     alignItems: 'center',
@@ -394,7 +402,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#ef4444',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -410,7 +417,21 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#6B7280',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  chatButton: {
+    position: 'absolute',
+    left: 20,
+    bottom: 150,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -421,9 +442,7 @@ const styles = StyleSheet.create({
   },
   bottomNav: {
     flexDirection: 'row',
-    backgroundColor: '#000',
     borderTopWidth: 1,
-    borderTopColor: '#1a1a1a',
     paddingVertical: 8,
     paddingBottom: 20,
   },
@@ -435,11 +454,9 @@ const styles = StyleSheet.create({
   },
   navText: {
     fontSize: 12,
-    color: '#525252',
     marginTop: 4,
   },
   navTextActive: {
-    color: '#fff',
     fontWeight: '600',
   },
   navIndicator: {
@@ -447,7 +464,6 @@ const styles = StyleSheet.create({
     bottom: -8,
     width: 48,
     height: 4,
-    backgroundColor: '#fff',
     borderRadius: 2,
   },
 });

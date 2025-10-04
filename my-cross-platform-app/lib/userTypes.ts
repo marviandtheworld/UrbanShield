@@ -1,11 +1,16 @@
 // User Type Configuration and Permissions
-export type UserType = 'parent' | 'business' | 'government' | 'community_member' | 'admin';
+export type UserType = 'parent' | 'resident' | 'business' | 'government' | 'tourist' | 'guest';
+
+export type VerificationStatus = 'pending' | 'verified' | 'rejected' | 'suspended';
+export type PostingPrivilege = 'moderated' | 'immediate' | 'restricted' | 'admin';
 
 export interface UserTypeConfig {
   name: string;
   description: string;
   icon: string;
   color: string;
+  verificationRequired: boolean;
+  postingPrivilege: PostingPrivilege;
   permissions: {
     canCreateIncidents: boolean;
     canViewAllIncidents: boolean;
@@ -14,10 +19,15 @@ export interface UserTypeConfig {
     canManageUsers: boolean;
     canAccessLiveStream: boolean;
     canCreateAnnouncements: boolean;
+    canEditOwnReports: boolean;
+    canMarkResolved: boolean;
+    canVoteFlag: boolean;
+    canAttachExternalDocs: boolean;
     priorityLevel: number; // Higher number = higher priority
   };
   features: string[];
   dashboardTabs: string[];
+  verificationRequirements: string[];
 }
 
 export const USER_TYPE_CONFIGS: Record<UserType, UserTypeConfig> = {
@@ -26,6 +36,8 @@ export const USER_TYPE_CONFIGS: Record<UserType, UserTypeConfig> = {
     description: 'Concerned parent monitoring child safety',
     icon: 'people',
     color: '#3B82F6', // Blue
+    verificationRequired: true,
+    postingPrivilege: 'moderated',
     permissions: {
       canCreateIncidents: true,
       canViewAllIncidents: true,
@@ -34,6 +46,10 @@ export const USER_TYPE_CONFIGS: Record<UserType, UserTypeConfig> = {
       canManageUsers: false,
       canAccessLiveStream: true,
       canCreateAnnouncements: false,
+      canEditOwnReports: false,
+      canMarkResolved: false,
+      canVoteFlag: false,
+      canAttachExternalDocs: false,
       priorityLevel: 2,
     },
     features: [
@@ -43,65 +59,20 @@ export const USER_TYPE_CONFIGS: Record<UserType, UserTypeConfig> = {
       'Receive notifications',
       'View community updates'
     ],
-    dashboardTabs: ['Safety Alerts', 'School Zones', 'My Reports', 'Community']
+    dashboardTabs: ['Safety Alerts', 'School Zones', 'My Reports', 'Community'],
+    verificationRequirements: [
+      'Location verification required',
+      'Neighbors verification needed'
+    ]
   },
-  
-  business: {
-    name: 'Business',
-    description: 'Local business owner concerned about area safety',
-    icon: 'business',
+
+  resident: {
+    name: 'Verified Resident',
+    description: 'Local resident with verified address',
+    icon: 'home',
     color: '#10B981', // Green
-    permissions: {
-      canCreateIncidents: true,
-      canViewAllIncidents: true,
-      canModerateIncidents: false,
-      canAccessAnalytics: true,
-      canManageUsers: false,
-      canAccessLiveStream: true,
-      canCreateAnnouncements: true,
-      priorityLevel: 3,
-    },
-    features: [
-      'Report business-related incidents',
-      'View area crime statistics',
-      'Access business safety analytics',
-      'Create community announcements',
-      'Monitor business district safety'
-    ],
-    dashboardTabs: ['Business Safety', 'Area Statistics', 'My Reports', 'Announcements']
-  },
-  
-  government: {
-    name: 'Government',
-    description: 'Government official managing public safety',
-    icon: 'shield',
-    color: '#8B5CF6', // Purple
-    permissions: {
-      canCreateIncidents: true,
-      canViewAllIncidents: true,
-      canModerateIncidents: true,
-      canAccessAnalytics: true,
-      canManageUsers: true,
-      canAccessLiveStream: true,
-      canCreateAnnouncements: true,
-      priorityLevel: 5,
-    },
-    features: [
-      'Full incident management',
-      'Access to all analytics',
-      'Moderate community content',
-      'Create official announcements',
-      'Manage user accounts',
-      'Access emergency protocols'
-    ],
-    dashboardTabs: ['Incident Management', 'Analytics', 'User Management', 'Emergency Center']
-  },
-  
-  community_member: {
-    name: 'Community Member',
-    description: 'General community member reporting local issues',
-    icon: 'person',
-    color: '#6B7280', // Gray
+    verificationRequired: true,
+    postingPrivilege: 'immediate',
     permissions: {
       canCreateIncidents: true,
       canViewAllIncidents: true,
@@ -110,22 +81,69 @@ export const USER_TYPE_CONFIGS: Record<UserType, UserTypeConfig> = {
       canManageUsers: false,
       canAccessLiveStream: true,
       canCreateAnnouncements: false,
-      priorityLevel: 1,
+      canEditOwnReports: true,
+      canMarkResolved: true,
+      canVoteFlag: true,
+      canAttachExternalDocs: false,
+      priorityLevel: 3,
     },
     features: [
-      'Report community incidents',
-      'View local safety updates',
-      'Participate in community discussions',
-      'Receive area notifications'
+      'Posts go live immediately',
+      'Edit own reports',
+      'Mark incidents resolved',
+      'Vote and flag posts',
+      'Priority in community'
     ],
-    dashboardTabs: ['Community', 'My Reports', 'Safety Updates', 'Discussions']
+    dashboardTabs: ['Community', 'My Reports', 'Resolved Issues', 'Voting'],
+    verificationRequirements: [
+      'Local address verification',
+      'Neighbors verification'
+    ]
   },
   
-  admin: {
-    name: 'Administrator',
-    description: 'System administrator with full access',
-    icon: 'settings',
-    color: '#EF4444', // Red
+  business: {
+    name: 'Business Owner',
+    description: 'Local business owner with verified permits',
+    icon: 'business',
+    color: '#F59E0B', // Orange
+    verificationRequired: true,
+    postingPrivilege: 'restricted',
+    permissions: {
+      canCreateIncidents: true,
+      canViewAllIncidents: true,
+      canModerateIncidents: false,
+      canAccessAnalytics: true,
+      canManageUsers: false,
+      canAccessLiveStream: true,
+      canCreateAnnouncements: true,
+      canEditOwnReports: true,
+      canMarkResolved: false,
+      canVoteFlag: true,
+      canAttachExternalDocs: false,
+      priorityLevel: 4,
+    },
+    features: [
+      'Post hazards in verified area only',
+      'Posts may be prioritized',
+      'Cannot post outside verified zone',
+      'Access business analytics',
+      'Create area announcements'
+    ],
+    dashboardTabs: ['Business Safety', 'Area Statistics', 'My Reports', 'Announcements'],
+    verificationRequirements: [
+      'DTI permit required',
+      'BIR permit required',
+      'Business license verification'
+    ]
+  },
+  
+  government: {
+    name: 'Government Official',
+    description: 'Verified government official with official credentials',
+    icon: 'shield',
+    color: '#8B5CF6', // Purple
+    verificationRequired: true,
+    postingPrivilege: 'immediate',
     permissions: {
       canCreateIncidents: true,
       canViewAllIncidents: true,
@@ -134,21 +152,98 @@ export const USER_TYPE_CONFIGS: Record<UserType, UserTypeConfig> = {
       canManageUsers: true,
       canAccessLiveStream: true,
       canCreateAnnouncements: true,
-      priorityLevel: 10,
+      canEditOwnReports: true,
+      canMarkResolved: true,
+      canVoteFlag: true,
+      canAttachExternalDocs: true,
+      priorityLevel: 5,
     },
     features: [
-      'Full system access',
-      'Manage all users and content',
-      'Access system analytics',
-      'Configure system settings',
-      'Emergency override capabilities'
+      'Posts go live immediately',
+      'Can attach external documents',
+      'Posts may be prioritized',
+      'Full incident management',
+      'Access to all analytics',
+      'Create official announcements'
     ],
-    dashboardTabs: ['System Overview', 'User Management', 'Analytics', 'Settings']
-  }
+    dashboardTabs: ['Incident Management', 'Analytics', 'Official Updates', 'Emergency Center'],
+    verificationRequirements: [
+      'Official ID verification (barangay captain/secretary)',
+      'OR .gov.ph email domain',
+      'Manual approval via admin dashboard'
+    ]
+  },
+
+  tourist: {
+    name: 'Tourist',
+    description: 'Visitor to the area',
+    icon: 'airplane',
+    color: '#06B6D4', // Cyan
+    verificationRequired: false,
+    postingPrivilege: 'moderated',
+    permissions: {
+      canCreateIncidents: true,
+      canViewAllIncidents: true,
+      canModerateIncidents: false,
+      canAccessAnalytics: false,
+      canManageUsers: false,
+      canAccessLiveStream: true,
+      canCreateAnnouncements: false,
+      canEditOwnReports: false,
+      canMarkResolved: false,
+      canVoteFlag: false,
+      canAttachExternalDocs: false,
+      priorityLevel: 1,
+    },
+    features: [
+      'Report incidents for moderation',
+      'View local safety information',
+      'Access tourist safety tips',
+      'Receive area notifications'
+    ],
+    dashboardTabs: ['Safety Info', 'My Reports', 'Tourist Tips', 'Area Alerts'],
+    verificationRequirements: [
+      'Email verification only'
+    ]
+  },
+
+  guest: {
+    name: 'Guest',
+    description: 'Anonymous visitor with limited access',
+    icon: 'person-outline',
+    color: '#6B7280', // Gray
+    verificationRequired: false,
+    postingPrivilege: 'moderated',
+    permissions: {
+      canCreateIncidents: true,
+      canViewAllIncidents: true,
+      canModerateIncidents: false,
+      canAccessAnalytics: false,
+      canManageUsers: false,
+      canAccessLiveStream: false,
+      canCreateAnnouncements: false,
+      canEditOwnReports: false,
+      canMarkResolved: false,
+      canVoteFlag: false,
+      canAttachExternalDocs: false,
+      priorityLevel: 0,
+    },
+    features: [
+      'View map only',
+      'Submit posts for moderation',
+      'Cannot comment or vote',
+      'Limited access to features'
+    ],
+    dashboardTabs: ['Map View', 'Submit Report'],
+    verificationRequirements: [
+      'No verification required'
+    ]
+  },
+  
 };
 
 export const getUserTypeConfig = (userType: UserType): UserTypeConfig => {
-  return USER_TYPE_CONFIGS[userType] || USER_TYPE_CONFIGS.community_member;
+  return USER_TYPE_CONFIGS[userType] || USER_TYPE_CONFIGS.guest;
 };
 
 export const getUserTypeColor = (userType: UserType): string => {
@@ -161,5 +256,29 @@ export const getUserTypeIcon = (userType: UserType): string => {
 
 export const hasPermission = (userType: UserType, permission: keyof UserTypeConfig['permissions']): boolean => {
   return getUserTypeConfig(userType).permissions[permission];
+};
+
+export const getPostingPrivilege = (userType: UserType): PostingPrivilege => {
+  return getUserTypeConfig(userType).postingPrivilege;
+};
+
+export const requiresVerification = (userType: UserType): boolean => {
+  return getUserTypeConfig(userType).verificationRequired;
+};
+
+export const getVerificationRequirements = (userType: UserType): string[] => {
+  return getUserTypeConfig(userType).verificationRequirements;
+};
+
+export const canPostImmediately = (userType: UserType): boolean => {
+  return getPostingPrivilege(userType) === 'immediate';
+};
+
+export const canPostWithModeration = (userType: UserType): boolean => {
+  return getPostingPrivilege(userType) === 'moderated';
+};
+
+export const canPostInRestrictedArea = (userType: UserType): boolean => {
+  return getPostingPrivilege(userType) === 'restricted';
 };
 

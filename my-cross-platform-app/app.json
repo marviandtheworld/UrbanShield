@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "urbanshield",
-    "slug": "my-cross-platform-app",
+    "name": "UrbanShield",
+    "slug": "urbanshield",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mycrossplatformapp",
+    "scheme": "urbanshield",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -38,7 +38,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

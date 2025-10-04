@@ -1,14 +1,16 @@
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-  Alert,
+    Alert,
+    Dimensions,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Colors } from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { authService } from '../../lib/authService';
 
 const { width } = Dimensions.get('window');
@@ -28,6 +30,9 @@ export default function ProfileView({
   onOpenSettings,
   onProfileUpdate,
 }: ProfileViewProps) {
+  const { isDark } = useTheme();
+  const colors = Colors[isDark ? 'dark' : 'light'];
+
   const handleLogout = async () => {
     try {
       await authService.signOut();
@@ -38,66 +43,66 @@ export default function ProfileView({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.profileHeader}>
+        <View style={[styles.profileHeader, { backgroundColor: isDark ? 'rgba(127, 29, 29, 0.2)' : colors.accent }]}>
           {/* Settings/Logout Button */}
           <TouchableOpacity 
-            style={styles.settingsButton}
+            style={[styles.settingsButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={session ? onOpenSettings : onAuthRequired}
           >
             <Ionicons 
               name={session ? "settings-outline" : "log-in-outline"} 
               size={20} 
-              color="#fff" 
+              color={colors.icon} 
             />
           </TouchableOpacity>
 
           {/* Logout Button (separate from settings) */}
           {session && (
             <TouchableOpacity 
-              style={[styles.settingsButton, { right: 70 }]}
+              style={[styles.settingsButton, { right: 70, backgroundColor: colors.surface, borderColor: colors.border }]}
               onPress={handleLogout}
             >
               <Ionicons 
                 name="log-out-outline" 
                 size={20} 
-                color="#fff" 
+                color={colors.icon} 
               />
             </TouchableOpacity>
           )}
 
           <View style={styles.profileInfo}>
             <View style={styles.profileAvatarContainer}>
-              <View style={styles.profileAvatar}>
-                <Ionicons name="person" size={48} color="#fff" />
+              <View style={[styles.profileAvatar, { backgroundColor: colors.primary, borderColor: isDark ? 'rgba(127, 29, 29, 0.5)' : colors.accentBorder }]}>
+                <Ionicons name="person" size={48} color={colors.background} />
               </View>
               {session && (
-                <TouchableOpacity style={styles.editButton}>
-                  <Ionicons name="camera" size={20} color="#fff" />
+                <TouchableOpacity style={[styles.editButton, { backgroundColor: colors.primary }]}>
+                  <Ionicons name="camera" size={20} color={colors.background} />
                 </TouchableOpacity>
               )}
             </View>
 
-            <Text style={styles.profileName}>
+            <Text style={[styles.profileName, { color: colors.text }]}>
               {userProfile ? userProfile.full_name : 'Guest User'}
             </Text>
-            <Text style={styles.profileHandle}>
+            <Text style={[styles.profileHandle, { color: colors.textSecondary }]}>
               {userProfile ? `@${userProfile.username}` : 'Login to continue'}
             </Text>
             {userProfile && (
-              <View style={styles.accountBadge}>
-                <Text style={styles.accountBadgeText}>
+              <View style={[styles.accountBadge, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : colors.accent, borderColor: colors.primary }]}>
+                <Text style={[styles.accountBadgeText, { color: colors.primary }]}>
                   {userProfile.user_type.replace('_', ' ').toUpperCase()}
                 </Text>
               </View>
             )}
             {!session && (
               <TouchableOpacity 
-                style={styles.loginPromptButton}
+                style={[styles.loginPromptButton, { backgroundColor: colors.primary }]}
                 onPress={onAuthRequired}
               >
-                <Text style={styles.loginPromptText}>Login / Sign Up</Text>
+                <Text style={[styles.loginPromptText, { color: colors.background }]}>Login / Sign Up</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -106,15 +111,15 @@ export default function ProfileView({
         {session && userProfile && (
           <>
             {/* Daily Streak Section */}
-            <View style={styles.streakSection}>
+            <View style={[styles.streakSection, { backgroundColor: isDark ? 'rgba(127, 29, 29, 0.3)' : colors.accent, borderBottomColor: colors.border }]}>
               <View style={styles.streakHeader}>
                 <View style={styles.streakTitleContainer}>
-                  <View style={styles.streakIconBox}>
-                    <Ionicons name="flame" size={20} color="#fff" />
+                  <View style={[styles.streakIconBox, { backgroundColor: colors.primary }]}>
+                    <Ionicons name="flame" size={20} color={colors.background} />
                   </View>
-                  <Text style={styles.streakTitle}>Daily Streak</Text>
+                  <Text style={[styles.streakTitle, { color: colors.text }]}>Daily Streak</Text>
                 </View>
-                <Text style={styles.streakCount}>
+                <Text style={[styles.streakCount, { color: colors.primary }]}>
                   {userProfile.streak_days || 0} days
                 </Text>
               </View>
@@ -122,11 +127,15 @@ export default function ProfileView({
                 {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
                   <View key={i} style={[
                     styles.streakDay,
-                    i < (userProfile.streak_days % 7) ? styles.streakDayActive : styles.streakDayInactive
+                    i < (userProfile.streak_days % 7) 
+                      ? { backgroundColor: colors.primary } 
+                      : { backgroundColor: colors.surface }
                   ]}>
                     <Text style={[
                       styles.streakDayText,
-                      i < (userProfile.streak_days % 7) ? styles.streakDayTextActive : styles.streakDayTextInactive
+                      i < (userProfile.streak_days % 7) 
+                        ? { color: colors.background } 
+                        : { color: colors.textMuted }
                     ]}>{day}</Text>
                   </View>
                 ))}
@@ -135,98 +144,98 @@ export default function ProfileView({
 
             {/* Stats Grid */}
             <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumberRed}>
+              <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.statNumberRed, { color: colors.primary }]}>
                   {userProfile.reports_filed || 0}
                 </Text>
-                <Text style={styles.statLabel}>Reports Filed</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Reports Filed</Text>
               </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumberWhite}>
+              <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.statNumberWhite, { color: colors.text }]}>
                   {userProfile.reports_resolved || 0}
                 </Text>
-                <Text style={styles.statLabel}>Resolved</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Resolved</Text>
               </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumberGray}>
+              <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.statNumberGray, { color: colors.textMuted }]}>
                   {(userProfile.reports_filed || 0) - (userProfile.reports_resolved || 0)}
                 </Text>
-                <Text style={styles.statLabel}>Active</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Active</Text>
               </View>
             </View>
 
             {/* Today's Activity */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="time-outline" size={20} color="#ef4444" />
-                <Text style={styles.sectionTitle}> Today's Activity</Text>
+                <Ionicons name="time-outline" size={20} color={colors.primary} />
+                <Text style={[styles.sectionTitle, { color: colors.text }]}> Today's Activity</Text>
               </View>
 
-              <View style={styles.activityCard}>
+              <View style={[styles.activityCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.activityHeader}>
                   <View style={styles.activityTitleContainer}>
-                    <View style={styles.activityDotRed} />
-                    <Text style={styles.activityTitle}>Streetlight Repair</Text>
+                    <View style={[styles.activityDotRed, { backgroundColor: colors.primary }]} />
+                    <Text style={[styles.activityTitle, { color: colors.text }]}>Streetlight Repair</Text>
                   </View>
-                  <Text style={styles.activityTime}>2 hrs ago</Text>
+                  <Text style={[styles.activityTime, { color: colors.textMuted }]}>2 hrs ago</Text>
                 </View>
-                <Text style={styles.activityDescription}>
+                <Text style={[styles.activityDescription, { color: colors.textSecondary }]}>
                   Oak Street & 5th Ave - Status updated to "In Progress"
                 </Text>
                 <View style={styles.progressContainer}>
-                  <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: '75%' }]} />
+                  <View style={[styles.progressBar, { backgroundColor: colors.backgroundTertiary }]}>
+                    <View style={[styles.progressFill, { width: '75%', backgroundColor: colors.primary }]} />
                   </View>
-                  <Text style={styles.progressText}>75%</Text>
+                  <Text style={[styles.progressText, { color: colors.textMuted }]}>75%</Text>
                 </View>
               </View>
 
-              <View style={styles.activityCard}>
+              <View style={[styles.activityCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.activityHeader}>
                   <View style={styles.activityTitleContainer}>
-                    <View style={styles.activityDotGreen} />
-                    <Text style={styles.activityTitle}>Playground Safety</Text>
+                    <View style={[styles.activityDotGreen, { backgroundColor: colors.success }]} />
+                    <Text style={[styles.activityTitle, { color: colors.text }]}>Playground Safety</Text>
                   </View>
-                  <Text style={styles.activityTime}>5 hrs ago</Text>
+                  <Text style={[styles.activityTime, { color: colors.textMuted }]}>5 hrs ago</Text>
                 </View>
-                <Text style={styles.activityDescription}>
+                <Text style={[styles.activityDescription, { color: colors.textSecondary }]}>
                   Lincoln Park - Marked as "Resolved"
                 </Text>
-                <Text style={styles.completedText}>✓ Completed</Text>
+                <Text style={[styles.completedText, { color: colors.success }]}>✓ Completed</Text>
               </View>
             </View>
 
             {/* This Week's Impact */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="trending-up" size={20} color="#ef4444" />
-                <Text style={styles.sectionTitle}> This Week's Impact</Text>
+                <Ionicons name="trending-up" size={20} color={colors.primary} />
+                <Text style={[styles.sectionTitle, { color: colors.text }]}> This Week's Impact</Text>
               </View>
 
-              <View style={styles.summaryCard}>
+              <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.summaryStats}>
                   <View style={styles.summaryStat}>
-                    <Text style={styles.summaryLabel}>Area Covered</Text>
-                    <Text style={styles.summaryValue}>2.3 km²</Text>
+                    <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Area Covered</Text>
+                    <Text style={[styles.summaryValue, { color: colors.text }]}>2.3 km²</Text>
                   </View>
                   <View style={styles.summaryStat}>
-                    <Text style={styles.summaryLabel}>Response Time</Text>
-                    <Text style={styles.summaryValueRed}>4.2 hrs</Text>
+                    <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Response Time</Text>
+                    <Text style={[styles.summaryValueRed, { color: colors.primary }]}>4.2 hrs</Text>
                   </View>
                 </View>
 
                 <View style={styles.summaryList}>
                   <View style={styles.summaryRow}>
-                    <Text style={styles.summaryRowLabel}>Safety Issues</Text>
-                    <Text style={styles.summaryRowValue}>8 reports</Text>
+                    <Text style={[styles.summaryRowLabel, { color: colors.textSecondary }]}>Safety Issues</Text>
+                    <Text style={[styles.summaryRowValue, { color: colors.text }]}>8 reports</Text>
                   </View>
                   <View style={styles.summaryRow}>
-                    <Text style={styles.summaryRowLabel}>Maintenance</Text>
-                    <Text style={styles.summaryRowValue}>5 reports</Text>
+                    <Text style={[styles.summaryRowLabel, { color: colors.textSecondary }]}>Maintenance</Text>
+                    <Text style={[styles.summaryRowValue, { color: colors.text }]}>5 reports</Text>
                   </View>
                   <View style={styles.summaryRow}>
-                    <Text style={styles.summaryRowLabel}>Community Help</Text>
-                    <Text style={styles.summaryRowValue}>2 reports</Text>
+                    <Text style={[styles.summaryRowLabel, { color: colors.textSecondary }]}>Community Help</Text>
+                    <Text style={[styles.summaryRowValue, { color: colors.text }]}>2 reports</Text>
                   </View>
                 </View>
               </View>
@@ -235,8 +244,8 @@ export default function ProfileView({
             {/* Badges */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="trophy" size={20} color="#fbbf24" />
-                <Text style={styles.sectionTitle}> Badges Earned</Text>
+                <Ionicons name="trophy" size={20} color={colors.warning} />
+                <Text style={[styles.sectionTitle, { color: colors.text }]}> Badges Earned</Text>
               </View>
 
               <ScrollView 
@@ -245,52 +254,52 @@ export default function ProfileView({
                 contentContainerStyle={styles.badgesContainer}
               >
                 <View style={styles.badge}>
-                  <View style={styles.badgeIconActive}>
-                    <Ionicons name="star" size={32} color="#fff" />
+                  <View style={[styles.badgeIconActive, { backgroundColor: colors.primary }]}>
+                    <Ionicons name="star" size={32} color={colors.background} />
                   </View>
-                  <Text style={styles.badgeLabel}>Community{"\n"}Hero</Text>
+                  <Text style={[styles.badgeLabel, { color: colors.textSecondary }]}>Community{"\n"}Hero</Text>
                 </View>
                 <View style={styles.badge}>
-                  <View style={styles.badgeIcon}>
-                    <Ionicons name="flame" size={32} color="#fff" />
+                  <View style={[styles.badgeIcon, { backgroundColor: colors.surface }]}>
+                    <Ionicons name="flame" size={32} color={colors.icon} />
                   </View>
-                  <Text style={styles.badgeLabel}>Week{"\n"}Streak</Text>
+                  <Text style={[styles.badgeLabel, { color: colors.textSecondary }]}>Week{"\n"}Streak</Text>
                 </View>
                 <View style={styles.badge}>
-                  <View style={styles.badgeIcon}>
-                    <Ionicons name="eye" size={32} color="#fff" />
+                  <View style={[styles.badgeIcon, { backgroundColor: colors.surface }]}>
+                    <Ionicons name="eye" size={32} color={colors.icon} />
                   </View>
-                  <Text style={styles.badgeLabel}>Watchful{"\n"}Eye</Text>
+                  <Text style={[styles.badgeLabel, { color: colors.textSecondary }]}>Watchful{"\n"}Eye</Text>
                 </View>
                 <View style={styles.badge}>
-                  <View style={styles.badgeIconLocked}>
-                    <Ionicons name="lock-closed" size={32} color="#525252" />
+                  <View style={[styles.badgeIconLocked, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}>
+                    <Ionicons name="lock-closed" size={32} color={colors.textMuted} />
                   </View>
-                  <Text style={styles.badgeLabelLocked}>Locked</Text>
+                  <Text style={[styles.badgeLabelLocked, { color: colors.textMuted }]}>Locked</Text>
                 </View>
               </ScrollView>
             </View>
 
             {/* Tabs */}
-            <View style={styles.tabs}>
-              <TouchableOpacity style={styles.tabActive}>
-                <Text style={styles.tabTextActive}>All Reports</Text>
-                <View style={styles.tabIndicator} />
+            <View style={[styles.tabs, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity style={[styles.tabActive, { borderBottomColor: colors.primary }]}>
+                <Text style={[styles.tabTextActive, { color: colors.text }]}>All Reports</Text>
+                <View style={[styles.tabIndicator, { backgroundColor: colors.primary }]} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.tab}>
-                <Text style={styles.tabText}>Saved</Text>
+                <Text style={[styles.tabText, { color: colors.textSecondary }]}>Saved</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.tab}>
-                <Text style={styles.tabText}>Following</Text>
+                <Text style={[styles.tabText, { color: colors.textSecondary }]}>Following</Text>
               </TouchableOpacity>
             </View>
 
             {/* Reports Grid */}
             <View style={styles.reportsGrid}>
               {[...Array(6)].map((_, i) => (
-                <View key={i} style={styles.reportCard}>
-                  <MaterialCommunityIcons name="file-document-outline" size={32} color="#525252" />
-                  <Text style={styles.reportCardText}>#{23 - i}</Text>
+                <View key={i} style={[styles.reportCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <MaterialCommunityIcons name="file-document-outline" size={32} color={colors.textMuted} />
+                  <Text style={[styles.reportCardText, { color: colors.textMuted }]}>#{23 - i}</Text>
                 </View>
               ))}
             </View>
@@ -305,12 +314,10 @@ export default function ProfileView({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   profileHeader: {
     paddingTop: 16,
     paddingBottom: 24,
-    backgroundColor: 'rgba(127, 29, 29, 0.2)',
     position: 'relative',
   },
   settingsButton: {
@@ -319,9 +326,7 @@ const styles = StyleSheet.create({
     right: 16,
     width: 44,
     height: 44,
-    backgroundColor: '#0a0a0a',
     borderWidth: 1,
-    borderColor: '#1a1a1a',
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
@@ -338,12 +343,10 @@ const styles = StyleSheet.create({
   profileAvatar: {
     width: 96,
     height: 96,
-    backgroundColor: '#ef4444',
     borderRadius: 48,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 4,
-    borderColor: 'rgba(127, 29, 29, 0.5)',
   },
   editButton: {
     position: 'absolute',
@@ -351,7 +354,6 @@ const styles = StyleSheet.create({
     right: 0,
     width: 32,
     height: 32,
-    backgroundColor: '#ef4444',
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -359,45 +361,36 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 4,
   },
   profileHandle: {
     fontSize: 14,
-    color: '#737373',
     marginBottom: 8,
   },
   accountBadge: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
     borderWidth: 1,
-    borderColor: '#ef4444',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
   accountBadgeText: {
     fontSize: 12,
-    color: '#ef4444',
     fontWeight: '600',
   },
   loginPromptButton: {
     marginTop: 12,
-    backgroundColor: '#ef4444',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
   },
   loginPromptText: {
-    color: '#fff',
     fontWeight: '600',
     fontSize: 14,
   },
   streakSection: {
     paddingHorizontal: 16,
     paddingVertical: 24,
-    backgroundColor: 'rgba(127, 29, 29, 0.3)',
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a1a',
   },
   streakHeader: {
     flexDirection: 'row',
@@ -412,7 +405,6 @@ const styles = StyleSheet.create({
   streakIconBox: {
     width: 32,
     height: 32,
-    backgroundColor: '#ef4444',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -421,12 +413,10 @@ const styles = StyleSheet.create({
   streakTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
   },
   streakCount: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ef4444',
   },
   streakDays: {
     flexDirection: 'row',
@@ -440,21 +430,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 2,
   },
-  streakDayActive: {
-    backgroundColor: '#ef4444',
-  },
-  streakDayInactive: {
-    backgroundColor: '#1a1a1a',
-  },
   streakDayText: {
     fontSize: 12,
     fontWeight: '600',
-  },
-  streakDayTextActive: {
-    color: '#fff',
-  },
-  streakDayTextInactive: {
-    color: '#525252',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -464,9 +442,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
     borderWidth: 1,
-    borderColor: '#1a1a1a',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
@@ -474,24 +450,20 @@ const styles = StyleSheet.create({
   statNumberRed: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#ef4444',
     marginBottom: 4,
   },
   statNumberWhite: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 4,
   },
   statNumberGray: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#737373',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#737373',
     textAlign: 'center',
   },
   section: {
@@ -506,12 +478,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
   },
   activityCard: {
-    backgroundColor: '#0a0a0a',
     borderWidth: 1,
-    borderColor: '#1a1a1a',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -530,30 +499,25 @@ const styles = StyleSheet.create({
   activityDotRed: {
     width: 8,
     height: 8,
-    backgroundColor: '#ef4444',
     borderRadius: 4,
     marginRight: 8,
   },
   activityDotGreen: {
     width: 8,
     height: 8,
-    backgroundColor: '#22c55e',
     borderRadius: 4,
     marginRight: 8,
   },
   activityTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
     flex: 1,
   },
   activityTime: {
     fontSize: 12,
-    color: '#525252',
   },
   activityDescription: {
     fontSize: 12,
-    color: '#737373',
     marginBottom: 8,
   },
   progressContainer: {
@@ -563,28 +527,22 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 4,
-    backgroundColor: '#1a1a1a',
     borderRadius: 2,
     overflow: 'hidden',
     marginRight: 8,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#ef4444',
   },
   progressText: {
     fontSize: 12,
-    color: '#525252',
   },
   completedText: {
     fontSize: 12,
-    color: '#22c55e',
     fontWeight: '600',
   },
   summaryCard: {
-    backgroundColor: '#0a0a0a',
     borderWidth: 1,
-    borderColor: '#1a1a1a',
     borderRadius: 16,
     padding: 16,
   },
@@ -598,18 +556,15 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#737373',
     marginBottom: 4,
   },
   summaryValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
   },
   summaryValueRed: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ef4444',
   },
   summaryList: {
     gap: 8,
@@ -621,12 +576,10 @@ const styles = StyleSheet.create({
   },
   summaryRowLabel: {
     fontSize: 14,
-    color: '#737373',
   },
   summaryRowValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
   },
   badgesContainer: {
     paddingRight: 16,
@@ -639,7 +592,6 @@ const styles = StyleSheet.create({
   badgeIcon: {
     width: 64,
     height: 64,
-    backgroundColor: '#262626',
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -648,7 +600,6 @@ const styles = StyleSheet.create({
   badgeIconActive: {
     width: 64,
     height: 64,
-    backgroundColor: '#ef4444',
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -657,28 +608,23 @@ const styles = StyleSheet.create({
   badgeIconLocked: {
     width: 64,
     height: 64,
-    backgroundColor: '#0a0a0a',
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#262626',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
   badgeLabel: {
     fontSize: 12,
-    color: '#737373',
     textAlign: 'center',
   },
   badgeLabelLocked: {
     fontSize: 12,
-    color: '#525252',
     textAlign: 'center',
   },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a1a',
     paddingHorizontal: 16,
   },
   tab: {
@@ -691,24 +637,20 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     borderBottomWidth: 2,
-    borderBottomColor: '#ef4444',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#737373',
   },
   tabTextActive: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
   },
   tabIndicator: {
     position: 'absolute',
     bottom: -1,
     height: 2,
     width: '100%',
-    backgroundColor: '#ef4444',
   },
   reportsGrid: {
     flexDirection: 'row',
@@ -718,9 +660,7 @@ const styles = StyleSheet.create({
   reportCard: {
     width: (width - 16) / 3,
     aspectRatio: 1,
-    backgroundColor: '#0a0a0a',
     borderWidth: 1,
-    borderColor: '#1a1a1a',
     margin: 2,
     borderRadius: 8,
     justifyContent: 'center',
@@ -728,7 +668,6 @@ const styles = StyleSheet.create({
   },
   reportCardText: {
     fontSize: 12,
-    color: '#525252',
     marginTop: 4,
   },
 });

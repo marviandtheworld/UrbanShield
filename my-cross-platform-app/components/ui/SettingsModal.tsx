@@ -1,19 +1,20 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Modal,
-  StyleSheet,
-  Dimensions,
-  Alert,
-  Switch,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import {
+    Alert,
+    Dimensions,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { Colors } from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { supabase } from '../../lib/supabase';
-import UrbanShieldApp from './UrbanShieldApp';
 
 const { width } = Dimensions.get('window');
 
@@ -32,11 +33,12 @@ export default function SettingsModal({
   userProfile,
   onProfileUpdate,
 }: SettingsModalProps) {
+  const { themeMode, isDark, setThemeMode } = useTheme();
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
   const [loading, setLoading] = useState(false);
 
   // Appearance settings
-  const [isDarkMode, setIsDarkMode] = useState(true); // App currently only dark mode
+  const [isDarkMode, setIsDarkMode] = useState(isDark);
 
   // Profile settings
   const [fullName, setFullName] = useState(userProfile?.full_name || '');
@@ -50,6 +52,16 @@ export default function SettingsModal({
   const [incidentUpdates, setIncidentUpdates] = useState(true);
   const [commentReplies, setCommentReplies] = useState(true);
   const [nearbyAlerts, setNearbyAlerts] = useState(true);
+
+  // Update local state when theme changes
+  useEffect(() => {
+    setIsDarkMode(isDark);
+  }, [isDark]);
+
+  const handleThemeChange = (newIsDark: boolean) => {
+    setIsDarkMode(newIsDark);
+    setThemeMode(newIsDark ? 'dark' : 'light');
+  };
 
   const handleUpdateProfile = async () => {
     if (!fullName.trim() || !username.trim()) {
@@ -102,39 +114,61 @@ export default function SettingsModal({
     }
   };
 
-  const renderAppearanceTab = () => (
-    <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Theme</Text>
-      <Text style={styles.sectionDescription}>
-        Customize how UrbanShield looks on your device
-      </Text>
-
-      <View style={styles.settingRow}>
-        <View style={styles.settingInfo}>
-          <Ionicons name="moon" size={24} color="#ef4444" />
-          <View style={styles.settingText}>
-            <Text style={styles.settingTitle}>Dark Mode</Text>
-            <Text style={styles.settingDescription}>
-              {isDarkMode ? 'Currently active' : 'Use light theme'}
-            </Text>
-          </View>
-        </View>
-        <Switch
-          value={isDarkMode}
-          onValueChange={setIsDarkMode}
-          trackColor={{ false: '#525252', true: '#ef4444' }}
-          thumbColor="#fff"
-        />
-      </View>
-
-      <View style={styles.infoBox}>
-        <Ionicons name="information-circle" size={20} color="#737373" />
-        <Text style={styles.infoText}>
-          Light mode coming soon! Dark mode is optimized for battery life and night viewing.
+  const renderAppearanceTab = () => {
+    const colors = Colors[isDark ? 'dark' : 'light'];
+    
+    return (
+      <View style={[styles.tabContent, { backgroundColor: colors.background }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Theme</Text>
+        <Text style={[styles.sectionDescription, { color: colors.secondary }]}>
+          Customize how UrbanShield looks on your device
         </Text>
+
+        <View style={[styles.settingRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.settingInfo}>
+            <Ionicons name="moon" size={24} color={colors.primary} />
+            <View style={styles.settingText}>
+              <Text style={[styles.settingTitle, { color: colors.text }]}>Dark Mode</Text>
+              <Text style={[styles.settingDescription, { color: colors.secondary }]}>
+                {isDarkMode ? 'Currently active' : 'Use light theme'}
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={isDarkMode}
+            onValueChange={handleThemeChange}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor="#fff"
+          />
+        </View>
+
+        <View style={[styles.settingRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.settingInfo}>
+            <Ionicons name="sunny" size={24} color={colors.warning} />
+            <View style={styles.settingText}>
+              <Text style={[styles.settingTitle, { color: colors.text }]}>Light Mode</Text>
+              <Text style={[styles.settingDescription, { color: colors.secondary }]}>
+                {!isDarkMode ? 'Currently active' : 'Use light theme'}
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={!isDarkMode}
+            onValueChange={(value) => handleThemeChange(!value)}
+            trackColor={{ false: colors.border, true: colors.warning }}
+            thumbColor="#fff"
+          />
+        </View>
+
+        <View style={[styles.infoBox, { backgroundColor: colors.info + '20' }]}>
+          <Ionicons name="information-circle" size={20} color={colors.info} />
+          <Text style={[styles.infoText, { color: colors.secondary }]}>
+            Choose your preferred theme. Light mode is great for daytime use, while dark mode saves battery and is easier on the eyes at night.
+          </Text>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderProfileTab = () => (
     <View style={styles.tabContent}>
@@ -291,6 +325,8 @@ export default function SettingsModal({
     </View>
   );
 
+  const colors = Colors[isDark ? 'dark' : 'light'];
+
   return (
     <Modal
       visible={visible}
@@ -299,30 +335,31 @@ export default function SettingsModal({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Settings</Text>
+        <View style={[styles.content, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color="#fff" />
+              <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.tabs}>
+          <View style={[styles.tabs, { borderBottomColor: colors.border }]}>
             <TouchableOpacity
               style={[
                 styles.tab,
-                activeTab === 'appearance' && styles.tabActive,
+                activeTab === 'appearance' && [styles.tabActive, { borderBottomColor: colors.primary }],
               ]}
               onPress={() => setActiveTab('appearance')}
             >
               <Ionicons
                 name="color-palette"
                 size={20}
-                color={activeTab === 'appearance' ? '#ef4444' : '#737373'}
+                color={activeTab === 'appearance' ? colors.primary : colors.secondary}
               />
               <Text
                 style={[
                   styles.tabText,
+                  { color: activeTab === 'appearance' ? colors.primary : colors.secondary },
                   activeTab === 'appearance' && styles.tabTextActive,
                 ]}
               >
@@ -333,18 +370,19 @@ export default function SettingsModal({
             <TouchableOpacity
               style={[
                 styles.tab,
-                activeTab === 'profile' && styles.tabActive,
+                activeTab === 'profile' && [styles.tabActive, { borderBottomColor: colors.primary }],
               ]}
               onPress={() => setActiveTab('profile')}
             >
               <Ionicons
                 name="person"
                 size={20}
-                color={activeTab === 'profile' ? '#ef4444' : '#737373'}
+                color={activeTab === 'profile' ? colors.primary : colors.secondary}
               />
               <Text
                 style={[
                   styles.tabText,
+                  { color: activeTab === 'profile' ? colors.primary : colors.secondary },
                   activeTab === 'profile' && styles.tabTextActive,
                 ]}
               >
@@ -355,18 +393,19 @@ export default function SettingsModal({
             <TouchableOpacity
               style={[
                 styles.tab,
-                activeTab === 'notifications' && styles.tabActive,
+                activeTab === 'notifications' && [styles.tabActive, { borderBottomColor: colors.primary }],
               ]}
               onPress={() => setActiveTab('notifications')}
             >
               <Ionicons
                 name="notifications"
                 size={20}
-                color={activeTab === 'notifications' ? '#ef4444' : '#737373'}
+                color={activeTab === 'notifications' ? colors.primary : colors.secondary}
               />
               <Text
                 style={[
                   styles.tabText,
+                  { color: activeTab === 'notifications' ? colors.primary : colors.secondary },
                   activeTab === 'notifications' && styles.tabTextActive,
                 ]}
               >

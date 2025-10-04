@@ -4,30 +4,28 @@ import React from 'react';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { isDark } = useTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: Colors[isDark ? 'dark' : 'light'].tint,
+        tabBarInactiveTintColor: Colors[isDark ? 'dark' : 'light'].tabIconDefault,
+        tabBarStyle: {
+          backgroundColor: Colors[isDark ? 'dark' : 'light'].background,
+          borderTopColor: Colors[isDark ? 'dark' : 'light'].border,
+        },
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'UrbanShield',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="shield.fill" color={color} />,
         }}
       />
     </Tabs>

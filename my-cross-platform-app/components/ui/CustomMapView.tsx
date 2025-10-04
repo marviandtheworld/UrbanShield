@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-} from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Session } from '@supabase/supabase-js';
+import React, { useState } from 'react';
+import {
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { Colors } from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface MapViewProps {
   session: Session | null;
@@ -18,20 +20,25 @@ interface MapViewProps {
 
 const MapView: React.FC<MapViewProps> = ({ session, onAuthRequired }) => {
   const [activeCategory, setActiveCategory] = useState<string>('Rescue');
+  const { isDark } = useTheme();
+  const colors = Colors[isDark ? 'dark' : 'light'];
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar 
+        barStyle={isDark ? "light-content" : "dark-content"} 
+        backgroundColor={colors.background} 
+      />
       
-      <View style={styles.header}>
-        <Text style={styles.logo}>UrbanShield</Text>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
+        <Text style={[styles.logo, { color: colors.text }]}>UrbanShield</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="search" size={20} color="#fff" />
+          <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.surface }]}>
+            <Ionicons name="search" size={20} color={colors.icon} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="notifications" size={20} color="#fff" />
-            <View style={styles.notificationDot} />
+          <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.surface }]}>
+            <Ionicons name="notifications" size={20} color={colors.icon} />
+            <View style={[styles.notificationDot, { backgroundColor: colors.primary }]} />
           </TouchableOpacity>
         </View>
       </View>
@@ -48,12 +55,16 @@ const MapView: React.FC<MapViewProps> = ({ session, onAuthRequired }) => {
             onPress={() => setActiveCategory(cat)}
             style={[
               styles.categoryPill,
-              activeCategory === cat ? styles.categoryPillActive : styles.categoryPillInactive
+              activeCategory === cat 
+                ? { backgroundColor: colors.primary } 
+                : { backgroundColor: colors.surface }
             ]}
           >
             <Text style={[
               styles.categoryText,
-              activeCategory === cat ? styles.categoryTextActive : styles.categoryTextInactive
+              activeCategory === cat 
+                ? { color: colors.background } 
+                : { color: colors.text }
             ]}>
               {cat}
             </Text>
@@ -62,26 +73,26 @@ const MapView: React.FC<MapViewProps> = ({ session, onAuthRequired }) => {
       </ScrollView>
 
       <View style={styles.mapArea}>
-        <View style={styles.mapPlaceholder}>
-          <MaterialCommunityIcons name="map-marker-radius" size={48} color="#ef4444" />
-          <Text style={styles.mapText}>Map View</Text>
-          <Text style={styles.mapSubtext}>Install react-native-maps</Text>
-          <Text style={styles.mapNote}>Import MapView from 'react-native-maps'</Text>
+        <View style={[styles.mapPlaceholder, { backgroundColor: colors.surface }]}>
+          <MaterialCommunityIcons name="map-marker-radius" size={48} color={colors.primary} />
+          <Text style={[styles.mapText, { color: colors.text }]}>Map View</Text>
+          <Text style={[styles.mapSubtext, { color: colors.textSecondary }]}>Install react-native-maps</Text>
+          <Text style={[styles.mapNote, { color: colors.textMuted }]}>Import MapView from 'react-native-maps'</Text>
         </View>
       </View>
 
-      <TouchableOpacity style={styles.locationButton}>
-        <Ionicons name="location" size={24} color="#000" />
+      <TouchableOpacity style={[styles.locationButton, { backgroundColor: colors.background }]}>
+        <Ionicons name="location" size={24} color={colors.text} />
       </TouchableOpacity>
 
-      <View style={styles.bottomPanel}>
+      <View style={[styles.bottomPanel, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <View style={styles.bottomPanelHeader}>
-          <Text style={styles.bottomPanelTitle}>In this area</Text>
-          <TouchableOpacity style={styles.bellButton}>
-            <Ionicons name="notifications-outline" size={20} color="#fff" />
+          <Text style={[styles.bottomPanelTitle, { color: colors.text }]}>In this area</Text>
+          <TouchableOpacity style={[styles.bellButton, { backgroundColor: colors.surface }]}>
+            <Ionicons name="notifications-outline" size={20} color={colors.icon} />
           </TouchableOpacity>
         </View>
-        <Text style={styles.bottomPanelSubtext}>3 alerts past 24hrs</Text>
+        <Text style={[styles.bottomPanelSubtext, { color: colors.textSecondary }]}>3 alerts past 24hrs</Text>
       </View>
     </View>
   );
@@ -90,7 +101,6 @@ const MapView: React.FC<MapViewProps> = ({ session, onAuthRequired }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -98,12 +108,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#000',
   },
   logo: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
   },
   headerButtons: {
     flexDirection: 'row',
@@ -112,7 +120,6 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 44,
     height: 44,
-    backgroundColor: '#1a1a1a',
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
@@ -124,7 +131,6 @@ const styles = StyleSheet.create({
     right: 8,
     width: 8,
     height: 8,
-    backgroundColor: '#ef4444',
     borderRadius: 4,
   },
   categoryScroll: {
@@ -140,47 +146,27 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 8,
   },
-  categoryPillActive: {
-    backgroundColor: '#fff',
-  },
-  categoryPillInactive: {
-    backgroundColor: '#1a1a1a',
-  },
-  categoryText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  categoryTextActive: {
-    color: '#000',
-  },
-  categoryTextInactive: {
-    color: '#fff',
-  },
   mapArea: {
     flex: 1,
     paddingHorizontal: 16,
   },
   mapPlaceholder: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   mapText: {
     fontSize: 24,
-    color: '#fff',
     marginTop: 12,
     fontWeight: 'bold',
   },
   mapSubtext: {
     fontSize: 14,
-    color: '#737373',
     marginTop: 4,
   },
   mapNote: {
     fontSize: 12,
-    color: '#525252',
     fontStyle: 'italic',
     marginTop: 4,
   },
@@ -190,7 +176,6 @@ const styles = StyleSheet.create({
     bottom: 140,
     width: 48,
     height: 48,
-    backgroundColor: '#fff',
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
@@ -201,12 +186,10 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   bottomPanel: {
-    backgroundColor: '#000',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#1a1a1a',
   },
   bottomPanelHeader: {
     flexDirection: 'row',
@@ -217,19 +200,16 @@ const styles = StyleSheet.create({
   bottomPanelTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
   },
   bellButton: {
     width: 40,
     height: 40,
-    backgroundColor: '#1a1a1a',
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   bottomPanelSubtext: {
     fontSize: 14,
-    color: '#737373',
   },
 });
 
