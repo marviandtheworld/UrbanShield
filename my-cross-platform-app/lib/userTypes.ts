@@ -1,5 +1,9 @@
 // User Type Configuration and Permissions
+// Mobile app user types (admin excluded - they use web interface)
 export type UserType = 'parent' | 'resident' | 'business' | 'government' | 'tourist' | 'guest';
+
+// All user types including admin (for database)
+export type AllUserType = 'parent' | 'resident' | 'business' | 'government' | 'tourist' | 'guest' | 'admin';
 
 export type VerificationStatus = 'pending' | 'verified' | 'rejected' | 'suspended';
 export type PostingPrivilege = 'moderated' | 'immediate' | 'restricted' | 'admin';
@@ -237,6 +241,42 @@ export const USER_TYPE_CONFIGS: Record<UserType, UserTypeConfig> = {
     dashboardTabs: ['Map View', 'Submit Report'],
     verificationRequirements: [
       'No verification required'
+    ]
+  },
+
+  // Admin user type (for database/web interface only)
+  admin: {
+    name: 'System Administrator',
+    description: 'System administrator with full verification and management capabilities',
+    icon: 'shield',
+    color: '#DC2626', // Red
+    verificationRequired: true,
+    postingPrivilege: 'admin',
+    permissions: {
+      canCreateIncidents: true,
+      canViewAllIncidents: true,
+      canModerateIncidents: true,
+      canAccessAnalytics: true,
+      canManageUsers: true,
+      canAccessLiveStream: true,
+      canCreateAnnouncements: true,
+      canEditOwnReports: true,
+      canMarkResolved: true,
+      canVoteFlag: true,
+      canAttachExternalDocs: true,
+      priorityLevel: 10, // Highest priority
+    },
+    features: [
+      'Verify all incidents',
+      'Full system management',
+      'User management',
+      'Analytics access',
+      'Content moderation'
+    ],
+    dashboardTabs: ['Incident Management', 'User Management', 'Analytics', 'System Settings'],
+    verificationRequirements: [
+      'Manual admin approval required',
+      'System administrator credentials'
     ]
   },
   

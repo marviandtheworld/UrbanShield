@@ -75,7 +75,7 @@ export const authService = {
       full_name: data.fullName,
       username: data.username,
       phone_number: data.phoneNumber || null,
-      user_type: data.userType || 'community_member',
+      user_type: data.userType || 'guest',
       address: data.address || null,
       city: data.city || null,
       state: data.state || null,

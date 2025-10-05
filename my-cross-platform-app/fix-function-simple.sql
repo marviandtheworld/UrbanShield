@@ -1,30 +1,17 @@
--- Database Schema Update Script
--- Run this in your Supabase SQL editor to add missing fields
+-- Simple Fix: Remove problematic columns from function
+-- This creates a minimal function that only uses existing columns
 
--- 1. Create missing enum types first
-DO $$ BEGIN
-    CREATE TYPE verification_status AS ENUM ('pending', 'verified', 'rejected', 'suspended');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+-- 1. First, let's see what columns actually exist
+SELECT 
+    'EXISTING COLUMNS' as info,
+    column_name,
+    data_type
+FROM information_schema.columns 
+WHERE table_name = 'incidents' 
+AND table_schema = 'public'
+ORDER BY ordinal_position;
 
-DO $$ BEGIN
-    CREATE TYPE posting_privilege AS ENUM ('moderated', 'immediate', 'restricted', 'admin');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
--- 2. Add missing columns to incidents table
-ALTER TABLE incidents 
-ADD COLUMN IF NOT EXISTS shares_count INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;
-
--- 3. Add missing columns to profiles table if they don't exist
-ALTER TABLE profiles 
-ADD COLUMN IF NOT EXISTS verification_status verification_status DEFAULT 'pending',
-ADD COLUMN IF NOT EXISTS posting_privilege posting_privilege DEFAULT 'moderated';
-
--- Update the get_incidents_with_user_info function to include new fields
+-- 2. Create a simple function that only uses existing columns
 CREATE OR REPLACE FUNCTION get_incidents_with_user_info()
 RETURNS TABLE (
     id UUID,
@@ -70,19 +57,18 @@ BEGIN
         i.landmark,
         i.is_anonymous,
         i.is_urgent,
-        i.is_rescue,
-        i.images,
-        i.external_documents,
+        false as is_rescue,  -- Default value since column doesn't exist
+        ARRAY[]::TEXT[] as external_documents,  -- Default empty array
         i.views,
         i.likes,
         i.comments_count,
         i.votes,
-        i.shares_count,
-        i.flags,
-        i.is_moderated,
+        0 as shares_count,  -- Default value since column doesn't exist
+        0 as flags,  -- Default value since column doesn't exist
+        false as is_moderated,  -- Default value since column doesn't exist
         i.is_approved,
-        i.is_verified,
-        i.priority,
+        false as is_verified,  -- Default value since column doesn't exist
+        0 as priority,  -- Default value since column doesn't exist
         i.created_at,
         i.updated_at,
         CASE 
@@ -97,10 +83,32 @@ BEGIN
         COALESCE(p.verification_status, 'pending'::verification_status) as verification_status
     FROM incidents i
     LEFT JOIN profiles p ON i.reporter_id = p.id
-    WHERE i.is_approved = true OR i.reporter_id = auth.uid()
-    ORDER BY i.priority DESC, i.created_at DESC;
+    -- Remove WHERE clause to show all incidents
+    ORDER BY 
+        i.created_at DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Grant permissions for the updated function
+-- 3. Grant permissions
 GRANT EXECUTE ON FUNCTION get_incidents_with_user_info() TO anon, authenticated;
+
+-- 4. Test the function
+SELECT 
+    'FUNCTION TEST' as test,
+    COUNT(*) as incident_count
+FROM get_incidents_with_user_info();
+
+-- 5. Show sample data
+SELECT 
+    'SAMPLE DATA' as test,
+    id,
+    title,
+    is_approved,
+    is_verified,
+    is_rescue,
+    shares_count,
+    created_at
+FROM get_incidents_with_user_info()
+ORDER BY created_at DESC
+LIMIT 3;
+

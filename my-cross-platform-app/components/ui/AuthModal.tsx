@@ -1,18 +1,17 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Picker,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { authService } from '../../lib/authService';
 
 interface AuthModalProps {
@@ -21,7 +20,7 @@ interface AuthModalProps {
   onSuccess: () => void;
 }
 
-type UserType = 'parent' | 'business' | 'government' | 'community_member' | 'admin';
+type UserType = 'parent' | 'resident' | 'business' | 'government' | 'tourist' | 'guest';
 
 export default function AuthModal({ visible, onClose, onSuccess }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
@@ -281,7 +280,7 @@ export default function AuthModal({ visible, onClose, onSuccess }: AuthModalProp
               <Text style={styles.sectionTitle}>User Type</Text>
               
               <View style={styles.userTypeContainer}>
-                {(['parent', 'business', 'government', 'community_member'] as UserType[]).map((type) => (
+                {(['parent', 'resident', 'business', 'government', 'tourist', 'guest'] as UserType[]).map((type) => (
                   <TouchableOpacity
                     key={type}
                     style={[

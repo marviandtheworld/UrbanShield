@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Session } from '@supabase/supabase-js';
 import React, { useEffect, useState } from 'react';
 import {
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Colors } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -336,6 +336,7 @@ export default function UrbanShieldApp() {
           </Text>
         </TouchableOpacity>
 
+
       </View>
 
       {/* Modals */}
@@ -361,6 +362,7 @@ export default function UrbanShieldApp() {
                     userType={userProfile?.user_type as UserType}
                     onSuccess={handleIncidentCreated}
                   />
+
         </>
       )}
 

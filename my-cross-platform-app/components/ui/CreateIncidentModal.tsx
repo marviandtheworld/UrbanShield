@@ -1,20 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Dimensions,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { Colors } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { supabase } from '../../lib/supabase';
-import { UserType, canPostImmediately, getPostingPrivilege } from '../../lib/userTypes';
+import { UserType, getPostingPrivilege } from '../../lib/userTypes';
 
 const { width } = Dimensions.get('window');
 
@@ -41,7 +41,7 @@ export default function CreateIncidentModal({
   const [loading, setLoading] = useState(false);
 
   // Step 1: Category & Severity
-  const [category, setCategory] = useState<Category>('other');
+  const [category, setCategory] = useState<Category | null>(null);
   const [severity, setSeverity] = useState<Severity>('medium');
 
   // Step 2: Details
@@ -63,7 +63,7 @@ export default function CreateIncidentModal({
     { value: 'flood', label: 'Flood-Baha', sublabel: 'Flooding incidents', icon: 'water', color: '#3b82f6' },
     { value: 'landslide', label: 'Landslide', sublabel: 'Landslide incidents', icon: 'earth', color: '#8b5cf6' },
     { value: 'earthquake', label: 'Earthquake-Linog', sublabel: 'Earthquake incidents', icon: 'pulse', color: '#dc2626' },
-    { value: 'other', label: 'Others', sublabel: 'Other incidents', icon: 'ellipsis-horizontal', color: '#737373' },
+    { value: 'other', label: 'Others-Uban', sublabel: 'Other incidents', icon: 'ellipsis-horizontal', color: '#737373' },
   ];
 
   const severities = [
@@ -75,7 +75,7 @@ export default function CreateIncidentModal({
 
   const resetForm = () => {
     setStep(1);
-    setCategory('other');
+    setCategory(null);
     setSeverity('medium');
     setTitle('');
     setDescription('');
@@ -89,6 +89,15 @@ export default function CreateIncidentModal({
 
   const handleNext = () => {
     if (step === 1) {
+      // Validate category and severity selection
+      if (!category) {
+        Alert.alert('Error', 'Please select an incident category');
+        return;
+      }
+      if (!severity) {
+        Alert.alert('Error', 'Please select a severity level');
+        return;
+      }
       setStep(2);
     } else if (step === 2) {
       if (!title.trim() || !description.trim()) {
@@ -106,49 +115,121 @@ export default function CreateIncidentModal({
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      // Determine if post needs moderation based on user type
+      // Validate form data before submission
+      if (!category) {
+        Alert.alert('Error', 'Please select an incident category');
+        setLoading(false);
+        return;
+      }
+      if (!severity) {
+        Alert.alert('Error', 'Please select a severity level');
+        setLoading(false);
+        return;
+      }
+      if (!title.trim()) {
+        Alert.alert('Error', 'Please provide a title');
+        setLoading(false);
+        return;
+      }
+      if (!description.trim()) {
+        Alert.alert('Error', 'Please provide a description');
+        setLoading(false);
+        return;
+      }
+      if (!address.trim()) {
+        Alert.alert('Error', 'Please provide a location');
+        setLoading(false);
+        return;
+      }
+
+      console.log('🚀 CreateIncidentModal: Starting submission...');
+      console.log('📝 Form data:', {
+        userId,
+        userType,
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        severity,
+        address: address.trim(),
+        landmark: landmark.trim(),
+        isAnonymous,
+        isUrgent,
+        imageUrls: imageUrls.length
+      });
+      
+      // Additional validation for category
+      if (!category || category === null) {
+        Alert.alert('Error', 'Please select a valid incident category');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('✅ Category validation passed:', category);
+      console.log('🔍 Category type:', typeof category);
+      console.log('🔍 Category value:', JSON.stringify(category));
+
+      // Allow all users to post immediately (admin can verify later)
       const postingPrivilege = getPostingPrivilege(userType);
-      const isApproved = canPostImmediately(userType);
-      const isModerated = postingPrivilege === 'moderated';
+      console.log('📋 Posting privilege:', postingPrivilege);
 
       // For now, we'll use a default location (you'll need to implement location picker)
       // This is placeholder coordinates for demonstration
+      const insertData = {
+        reporter_id: userId,
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        severity,
+        address: address.trim(),
+        landmark: landmark.trim() || null,
+        is_anonymous: isAnonymous,
+        is_urgent: isUrgent || severity === 'critical',
+        images: imageUrls.length > 0 ? imageUrls : null,
+        is_verified: false, // New incidents start as unverified
+        views_count: 0, // Initialize views_count
+        likes_count: 0, // Initialize likes_count
+        shares_count: 0, // Initialize shares_count
+        // TODO: Add actual location from location picker
+        location: `POINT(123.8854 10.3157)`, // Cebu City placeholder
+        status: 'open',
+      };
+
+      console.log('💾 Inserting data:', insertData);
+      console.log('🔍 Category in insertData:', insertData.category);
+      console.log('🔍 Severity in insertData:', insertData.severity);
+
       const { data, error } = await supabase
         .from('incidents')
-        .insert({
-          reporter_id: userId,
-          title: title.trim(),
-          description: description.trim(),
-          category,
-          severity,
-          address: address.trim(),
-          landmark: landmark.trim() || null,
-          is_anonymous: isAnonymous,
-          is_urgent: isUrgent || severity === 'critical',
-          is_rescue: isRescue,
-          images: imageUrls.length > 0 ? imageUrls : null,
-          external_documents: userType === 'government' ? [] : null, // Government users can attach external docs
-          is_moderated: isModerated,
-          is_approved: isApproved,
-          priority: userType === 'government' ? 1 : 0, // Government posts get priority
-          // TODO: Add actual location from location picker
-          location: `POINT(123.8854 10.3157)`, // Cebu City placeholder
-          status: 'open',
-        })
+        .insert(insertData)
         .select();
 
-      if (error) throw error;
+      console.log('📊 Insert result:', { data, error });
+      
+      if (error) {
+        console.error('❌ Detailed error info:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+      }
 
-      const successMessage = isApproved 
-        ? 'Your report has been submitted and is now live!' 
-        : 'Your report has been submitted for moderation. It will be reviewed before going live.';
+      if (error) {
+        console.error('❌ Insert error:', error);
+        throw error;
+      }
+
+      console.log('✅ Insert successful:', data);
+
+      const successMessage = 'Your report has been submitted and is now live! Admin can verify it later.';
       
       Alert.alert('Success', successMessage);
       resetForm();
       onClose();
       onSuccess();
     } catch (error) {
-      Alert.alert('Error', (error as Error).message);
+      console.error('❌ CreateIncidentModal: Submission failed:', error);
+      Alert.alert('Error', `Failed to submit report: ${(error as Error).message}`);
     } finally {
       setLoading(false);
     }
@@ -173,7 +254,10 @@ export default function CreateIncidentModal({
                 { backgroundColor: colors.card, borderColor: colors.border },
                 category === cat.value && [styles.categoryCardActive, { borderColor: cat.color }],
               ]}
-              onPress={() => setCategory(cat.value as Category)}
+              onPress={() => {
+                console.log('🎯 Category selected:', cat.value, 'Label:', cat.label);
+                setCategory(cat.value as Category);
+              }}
             >
               <View
                 style={[
@@ -221,7 +305,10 @@ export default function CreateIncidentModal({
               { backgroundColor: colors.card, borderColor: colors.border },
               severity === sev.value && [styles.severityCardActive, { borderColor: sev.color }],
             ]}
-            onPress={() => setSeverity(sev.value as Severity)}
+            onPress={() => {
+              console.log('🎯 Severity selected:', sev.value, 'Label:', sev.label);
+              setSeverity(sev.value as Severity);
+            }}
           >
             <View
               style={[
