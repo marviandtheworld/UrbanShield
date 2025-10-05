@@ -475,6 +475,19 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
     return categoryMap[category] || category;
   };
 
+  const getCategoryColor = (category: string) => {
+    const categoryColors: { [key: string]: string } = {
+      'crime': '#ef4444',
+      'fire': '#ff6b35',
+      'accident': '#f59e0b',
+      'flood': '#3b82f6',
+      'landslide': '#8b5cf6',
+      'earthquake': '#dc2626',
+      'other': '#737373'
+    };
+    return categoryColors[category] || colors.secondary;
+  };
+
   const getSeverityColor = (severity: string) => {
     const severityColors: { [key: string]: string } = {
       'low': colors.success,
@@ -487,7 +500,16 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
 
   const filteredIncidents = activeCategory === 'all' 
     ? incidents 
-    : incidents.filter(incident => incident.category === activeCategory);
+    : incidents.filter(incident => {
+        const matches = incident.category === activeCategory;
+        console.log('🔍 Category filter:', {
+          incidentCategory: incident.category,
+          activeCategory,
+          matches,
+          incidentTitle: incident.title
+        });
+        return matches;
+      });
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -608,6 +630,12 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
                   <Text style={[styles.metaText, { color: colors.secondary }]}>{incident.address}</Text>
                   <Text style={[styles.metaText, { color: colors.secondary }]}> • </Text>
                   <Text style={[styles.metaText, { color: colors.secondary }]}>{formatTimeAgo(incident.created_at)}</Text>
+                </View>
+
+                <View style={styles.incidentTypeRow}>
+                  <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(incident.category) }]}>
+                    <Text style={styles.categoryText}>{getCategoryDisplayName(incident.category)}</Text>
+                  </View>
                   <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(incident.severity) }]}>
                     <Text style={styles.severityText}>{incident.severity.toUpperCase()}</Text>
                   </View>
@@ -1172,6 +1200,22 @@ const styles = StyleSheet.create({
   noCommentsText: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  incidentTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  categoryBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  categoryText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
 

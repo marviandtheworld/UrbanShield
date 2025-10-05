@@ -18,12 +18,10 @@ SELECT EXISTS (
     SELECT 1 FROM pg_type WHERE typname = 'incident_category'
 ) as enum_exists;
 
--- 3. If enum exists but has wrong values, we need to add the missing values
+-- 3. Check what values exist and add missing ones
 DO $$
 DECLARE
     enum_oid OID;
-    missing_values TEXT[] := ARRAY['crime', 'fire', 'accident', 'flood', 'landslide', 'earthquake', 'other'];
-    val TEXT;
     value_exists BOOLEAN;
 BEGIN
     -- Get the enum type OID
@@ -32,26 +30,69 @@ BEGIN
     IF enum_oid IS NOT NULL THEN
         RAISE NOTICE 'Found incident_category enum with OID: %', enum_oid;
         
-        -- Check each value and add if missing
-        FOREACH val IN ARRAY missing_values LOOP
-            -- Check if value exists
-            SELECT EXISTS (
-                SELECT 1 FROM pg_enum 
-                WHERE enumtypid = enum_oid AND enumlabel = val
-            ) INTO value_exists;
-            
-            IF NOT value_exists THEN
-                BEGIN
-                    ALTER TYPE incident_category ADD VALUE val;
-                    RAISE NOTICE 'Added missing enum value: %', val;
-                EXCEPTION
-                    WHEN OTHERS THEN
-                        RAISE NOTICE 'Failed to add %: %', val, SQLERRM;
-                END;
-            ELSE
-                RAISE NOTICE 'Enum value % already exists', val;
-            END IF;
-        END LOOP;
+        -- Check and add each value individually
+        -- Check for 'crime'
+        SELECT EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = enum_oid AND enumlabel = 'crime') INTO value_exists;
+        IF NOT value_exists THEN
+            ALTER TYPE incident_category ADD VALUE 'crime';
+            RAISE NOTICE 'Added missing enum value: crime';
+        ELSE
+            RAISE NOTICE 'Enum value crime already exists';
+        END IF;
+        
+        -- Check for 'fire'
+        SELECT EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = enum_oid AND enumlabel = 'fire') INTO value_exists;
+        IF NOT value_exists THEN
+            ALTER TYPE incident_category ADD VALUE 'fire';
+            RAISE NOTICE 'Added missing enum value: fire';
+        ELSE
+            RAISE NOTICE 'Enum value fire already exists';
+        END IF;
+        
+        -- Check for 'accident'
+        SELECT EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = enum_oid AND enumlabel = 'accident') INTO value_exists;
+        IF NOT value_exists THEN
+            ALTER TYPE incident_category ADD VALUE 'accident';
+            RAISE NOTICE 'Added missing enum value: accident';
+        ELSE
+            RAISE NOTICE 'Enum value accident already exists';
+        END IF;
+        
+        -- Check for 'flood'
+        SELECT EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = enum_oid AND enumlabel = 'flood') INTO value_exists;
+        IF NOT value_exists THEN
+            ALTER TYPE incident_category ADD VALUE 'flood';
+            RAISE NOTICE 'Added missing enum value: flood';
+        ELSE
+            RAISE NOTICE 'Enum value flood already exists';
+        END IF;
+        
+        -- Check for 'landslide'
+        SELECT EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = enum_oid AND enumlabel = 'landslide') INTO value_exists;
+        IF NOT value_exists THEN
+            ALTER TYPE incident_category ADD VALUE 'landslide';
+            RAISE NOTICE 'Added missing enum value: landslide';
+        ELSE
+            RAISE NOTICE 'Enum value landslide already exists';
+        END IF;
+        
+        -- Check for 'earthquake'
+        SELECT EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = enum_oid AND enumlabel = 'earthquake') INTO value_exists;
+        IF NOT value_exists THEN
+            ALTER TYPE incident_category ADD VALUE 'earthquake';
+            RAISE NOTICE 'Added missing enum value: earthquake';
+        ELSE
+            RAISE NOTICE 'Enum value earthquake already exists';
+        END IF;
+        
+        -- Check for 'other'
+        SELECT EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = enum_oid AND enumlabel = 'other') INTO value_exists;
+        IF NOT value_exists THEN
+            ALTER TYPE incident_category ADD VALUE 'other';
+            RAISE NOTICE 'Added missing enum value: other';
+        ELSE
+            RAISE NOTICE 'Enum value other already exists';
+        END IF;
     ELSE
         RAISE NOTICE 'incident_category enum does not exist, creating it...';
         
