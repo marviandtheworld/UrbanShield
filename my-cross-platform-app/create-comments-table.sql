@@ -122,3 +122,5 @@ CREATE TRIGGER update_incident_comments_count_delete
 -- 10. Grant necessary permissions
 GRANT ALL ON comments TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION get_comments_with_user_info(UUID) TO anon, authenticated;
+
+

@@ -129,3 +129,5 @@ SELECT
     COUNT(*)::text as value 
 FROM get_incidents_with_user_info() 
 WHERE is_urgent = true;
+
+

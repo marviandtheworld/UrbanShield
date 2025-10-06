@@ -80,3 +80,5 @@ SELECT COUNT(*) as count FROM incidents;
 SELECT 'FUNCTION CAN SEE NEW INCIDENT' as test;
 SELECT COUNT(*) as count FROM get_incidents_with_user_info();
 
+
+

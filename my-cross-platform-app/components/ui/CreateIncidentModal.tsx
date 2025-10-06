@@ -1,9 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
+// import * as VideoThumbnails from 'expo-video-thumbnails';
+import React, { useEffect, useState } from 'react';
 import {
     Alert,
     Dimensions,
+    Image,
     Modal,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -13,8 +17,10 @@ import {
 } from 'react-native';
 import { Colors } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
+import LocationService, { LocationData } from '../../lib/locationService';
 import { supabase } from '../../lib/supabase';
 import { UserType, getPostingPrivilege } from '../../lib/userTypes';
+import LocationSearchModal from './LocationSearchModal';
 
 const { width } = Dimensions.get('window');
 
@@ -52,9 +58,21 @@ export default function CreateIncidentModal({
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isUrgent, setIsUrgent] = useState(false);
   const [isRescue, setIsRescue] = useState(false);
+  
+  // Location
+  const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
+  const [showLocationSearch, setShowLocationSearch] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
 
-  // Step 3: Media (simplified for now)
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  // Step 3: Media
+  const [mediaFiles, setMediaFiles] = useState<Array<{
+    uri: string;
+    type: 'image' | 'video';
+    thumbnail?: string;
+  }>>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
   const categories = [
     { value: 'crime', label: 'Crime-Krimen', sublabel: 'Theft, Public Disturbance', icon: 'shield', color: '#ef4444' },
@@ -65,6 +83,282 @@ export default function CreateIncidentModal({
     { value: 'earthquake', label: 'Earthquake-Linog', sublabel: 'Earthquake incidents', icon: 'pulse', color: '#dc2626' },
     { value: 'other', label: 'Others-Uban', sublabel: 'Other incidents', icon: 'ellipsis-horizontal', color: '#737373' },
   ];
+
+  // Location service instance
+  const locationService = LocationService.getInstance();
+
+  // Media handling functions
+  const requestMediaPermissions = async () => {
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant camera roll permissions to upload photos and videos.');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const pickImage = async () => {
+    // Disabled - only camera capture allowed to prevent fake news
+    Alert.alert(
+      'Camera Only',
+      'To prevent fake news and AI-generated content, only live camera capture is allowed. Please use the "Take Photo" or "Record Video" buttons.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const takePhoto = async () => {
+    const hasPermission = await requestMediaPermissions();
+    if (!hasPermission) return;
+
+    try {
+      // Web platform camera support
+      if (Platform.OS === 'web') {
+        // For web, we'll use the browser's camera API
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+          const asset = result.assets[0];
+          const newMedia = {
+            uri: asset.uri,
+            type: 'image' as const,
+          };
+
+          setMediaFiles(prev => [...prev, newMedia]);
+        }
+      } else {
+        // Mobile platform camera
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+          const asset = result.assets[0];
+          const newMedia = {
+            uri: asset.uri,
+            type: 'image' as const,
+          };
+
+          setMediaFiles(prev => [...prev, newMedia]);
+        }
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
+    }
+  };
+
+  const recordVideo = async () => {
+    const hasPermission = await requestMediaPermissions();
+    if (!hasPermission) return;
+
+    try {
+      // Web platform camera support
+      if (Platform.OS === 'web') {
+        // For web, we'll use the browser's camera API
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+          videoMaxDuration: 30, // 30 seconds max
+        });
+
+        if (!result.canceled && result.assets[0]) {
+          const asset = result.assets[0];
+          const newMedia: {
+            uri: string;
+            type: 'image' | 'video';
+            thumbnail?: string;
+          } = {
+            uri: asset.uri,
+            type: 'video' as const,
+          };
+
+          // For videos, use the video URI as thumbnail for now
+          newMedia.thumbnail = asset.uri;
+
+          setMediaFiles(prev => [...prev, newMedia]);
+        }
+      } else {
+        // Mobile platform camera
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+          videoMaxDuration: 30, // 30 seconds max
+        });
+
+        if (!result.canceled && result.assets[0]) {
+          const asset = result.assets[0];
+          const newMedia: {
+            uri: string;
+            type: 'image' | 'video';
+            thumbnail?: string;
+          } = {
+            uri: asset.uri,
+            type: 'video' as const,
+          };
+
+          // For videos, use the video URI as thumbnail for now
+          newMedia.thumbnail = asset.uri;
+
+          setMediaFiles(prev => [...prev, newMedia]);
+        }
+      }
+    } catch (error) {
+      console.error('Error recording video:', error);
+      Alert.alert('Error', 'Failed to record video. Please try again.');
+    }
+  };
+
+  const removeMedia = (index: number) => {
+    setMediaFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadMediaToSupabase = async (uri: string, mediaType: 'image' | 'video' = 'image'): Promise<string | null> => {
+    try {
+      setUploadingMedia(true);
+      
+      // Create a unique filename with proper extension
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(7);
+      const extension = mediaType === 'video' ? 'mp4' : 'jpg';
+      const filename = `incident_media_${timestamp}_${randomId}.${extension}`;
+      
+      console.log('📤 Uploading media:', { uri, mediaType, filename });
+      
+      // Read the file
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      // Determine content type based on media type
+      const contentType = mediaType === 'video' ? 'video/mp4' : 'image/jpeg';
+      
+      console.log('📤 Upload details:', { filename, contentType, blobSize: blob.size });
+      
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('incident-media')
+        .upload(filename, blob, {
+          contentType,
+          upsert: false, // Don't overwrite existing files
+        });
+
+      if (error) {
+        console.error('❌ Upload error:', error);
+        console.error('❌ Error details:', error.message);
+        return null;
+      }
+
+      console.log('✅ Upload successful:', data);
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('incident-media')
+        .getPublicUrl(filename);
+
+      console.log('🔗 Public URL:', publicUrl);
+      
+      // Test if the URL is accessible
+      try {
+        const testResponse = await fetch(publicUrl, { method: 'HEAD' });
+        if (testResponse.ok) {
+          console.log('✅ URL is accessible');
+          return publicUrl;
+        } else {
+          console.error('❌ URL not accessible:', testResponse.status);
+          return null;
+        }
+      } catch (testError) {
+        console.error('❌ URL test failed:', testError);
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ Error uploading media:', error);
+      return null;
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  // Get user location when modal opens
+  useEffect(() => {
+    if (visible) {
+      getCurrentLocation();
+    }
+  }, [visible]);
+
+  const getCurrentLocation = async () => {
+    setLocationLoading(true);
+    try {
+      // Skip location on web platform if not supported
+      if (Platform.OS === 'web' && !navigator.geolocation) {
+        console.warn('Geolocation not supported on this web browser');
+        setLocationPermissionGranted(false);
+        setLocationLoading(false);
+        return;
+      }
+
+      const result = await locationService.getLocationWithAddress();
+      
+      if (result.granted && result.location) {
+        setCurrentLocation(result.location);
+        setSelectedLocation(result.location);
+        setLocationPermissionGranted(true);
+        
+        // Set default address if not already set
+        if (!address && result.location.address) {
+          setAddress(result.location.address);
+        }
+        
+        console.log('📍 Location obtained:', result.location);
+      } else {
+        console.warn('Location not available:', result.error);
+        setLocationPermissionGranted(false);
+      }
+    } catch (error) {
+      console.error('Location error:', error);
+      setLocationPermissionGranted(false);
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  const handleLocationSelect = (location: LocationData) => {
+    setSelectedLocation(location);
+    setAddress(location.address || `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`);
+    setShowLocationSearch(false);
+  };
+
+  const handleLocationSearch = () => {
+    if (!currentLocation) {
+      Alert.alert(
+        'Location Required',
+        'Please enable location access first to search for nearby places.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    setShowLocationSearch(true);
+  };
+
+  const requestLocationPermission = async () => {
+    const granted = await locationService.showLocationPermissionDialog();
+    if (granted) {
+      await getCurrentLocation();
+    }
+  };
 
   const severities = [
     { value: 'low', label: 'Low', description: 'Minor issue, not urgent', color: '#22c55e' },
@@ -84,7 +378,8 @@ export default function CreateIncidentModal({
     setIsAnonymous(false);
     setIsUrgent(false);
     setIsRescue(false);
-    setImageUrls([]);
+    setMediaFiles([]);
+    setUploadingMedia(false);
   };
 
   const handleNext = () => {
@@ -154,7 +449,7 @@ export default function CreateIncidentModal({
         landmark: landmark.trim(),
         isAnonymous,
         isUrgent,
-        imageUrls: imageUrls.length
+        mediaFiles: mediaFiles.length
       });
       
       // Additional validation for category
@@ -172,8 +467,30 @@ export default function CreateIncidentModal({
       const postingPrivilege = getPostingPrivilege(userType);
       console.log('📋 Posting privilege:', postingPrivilege);
 
-      // For now, we'll use a default location (you'll need to implement location picker)
-      // This is placeholder coordinates for demonstration
+      // Use selected location, current location, or fallback to Cebu City
+      const locationToUse = selectedLocation || currentLocation;
+      const locationString = locationToUse 
+        ? `POINT(${locationToUse.longitude} ${locationToUse.latitude})`
+        : `POINT(123.8854 10.3157)`; // Cebu City fallback
+      
+      console.log('📍 Using location:', selectedLocation ? 'Selected location' : currentLocation ? 'Current location' : 'Fallback location');
+      
+      // Upload media files if any
+      let uploadedMediaUrls: string[] = [];
+      if (mediaFiles.length > 0) {
+        console.log('📸 Uploading media files...');
+        for (const mediaFile of mediaFiles) {
+          const uploadedUrl = await uploadMediaToSupabase(mediaFile.uri, mediaFile.type);
+          if (uploadedUrl) {
+            uploadedMediaUrls.push(uploadedUrl);
+            console.log('✅ Media uploaded:', uploadedUrl);
+          } else {
+            console.error('❌ Failed to upload media:', mediaFile.uri);
+          }
+        }
+        console.log('✅ Media upload complete:', uploadedMediaUrls.length, 'files uploaded');
+      }
+      
       const insertData = {
         reporter_id: userId,
         title: title.trim(),
@@ -184,13 +501,12 @@ export default function CreateIncidentModal({
         landmark: landmark.trim() || null,
         is_anonymous: isAnonymous,
         is_urgent: isUrgent || severity === 'critical',
-        images: imageUrls.length > 0 ? imageUrls : null,
+        images: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : null,
         is_verified: false, // New incidents start as unverified
         views_count: 0, // Initialize views_count
         likes_count: 0, // Initialize likes_count
         shares_count: 0, // Initialize shares_count
-        // TODO: Add actual location from location picker
-        location: `POINT(123.8854 10.3157)`, // Cebu City placeholder
+        location: locationString,
         status: 'open',
       };
 
@@ -369,13 +685,51 @@ export default function CreateIncidentModal({
         <Text style={[styles.charCount, { color: colors.secondary }]}>{description.length}/500</Text>
 
         <Text style={[styles.label, { color: colors.text }]}>Location *</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-          placeholder="Street address or general area"
-          placeholderTextColor={colors.secondary}
-          value={address}
-          onChangeText={setAddress}
-        />
+        <View style={styles.locationContainer}>
+          <TextInput
+            style={[styles.input, styles.locationInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+            placeholder="Street address or general area"
+            placeholderTextColor={colors.secondary}
+            value={address}
+            onChangeText={setAddress}
+          />
+          <TouchableOpacity
+            style={[styles.locationButton, { backgroundColor: locationPermissionGranted ? colors.primary : colors.secondary }]}
+            onPress={locationPermissionGranted ? getCurrentLocation : requestLocationPermission}
+            disabled={locationLoading}
+          >
+            {locationLoading ? (
+              <Ionicons name="refresh" size={20} color="#fff" />
+            ) : (
+              <Ionicons name="location" size={20} color="#fff" />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.searchButton, { backgroundColor: colors.primary }]}
+            onPress={handleLocationSearch}
+            disabled={!locationPermissionGranted}
+          >
+            <Ionicons name="search" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        
+        {currentLocation && (
+          <View style={[styles.locationInfo, { backgroundColor: colors.surface }]}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+            <Text style={[styles.locationText, { color: colors.text }]}>
+              Current location: {currentLocation.address || `${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`}
+            </Text>
+          </View>
+        )}
+        
+        {!locationPermissionGranted && (
+          <View style={[styles.locationWarning, { backgroundColor: colors.warning + '20' }]}>
+            <Ionicons name="warning" size={16} color={colors.warning} />
+            <Text style={[styles.warningText, { color: colors.warning }]}>
+              Location access needed for accurate incident reporting
+            </Text>
+          </View>
+        )}
 
         <Text style={[styles.label, { color: colors.text }]}>Nearby Landmark (Optional)</Text>
         <TextInput
@@ -465,23 +819,90 @@ export default function CreateIncidentModal({
     
     return (
       <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.stepTitle, { color: colors.text }]}>Add photos or videos (Optional)</Text>
+        <Text style={[styles.stepTitle, { color: colors.text }]}>Capture photos or videos (Optional)</Text>
         <Text style={[styles.stepDescription, { color: colors.secondary }]}>
-          Visual evidence helps verify and resolve incidents faster
+          Use your camera to capture real-time evidence. This helps verify incidents and prevents fake news.
         </Text>
 
-        <View style={[styles.mediaUploadArea, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="camera" size={48} color={colors.secondary} />
-          <Text style={[styles.uploadText, { color: colors.text }]}>Take a live camera picture</Text>
-          <Text style={[styles.uploadSubtext, { color: colors.secondary }]}>
-            Tap to open camera and take a photo
-          </Text>
+        {/* Media Upload Buttons - Camera Only */}
+        <View style={styles.mediaButtonsContainer}>
+          <TouchableOpacity
+            style={[styles.mediaButton, { backgroundColor: colors.primary }]}
+            onPress={takePhoto}
+            disabled={uploadingMedia}
+          >
+            <Ionicons name="camera" size={24} color="#fff" />
+            <Text style={styles.mediaButtonText}>Take Photo</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.mediaButton, { backgroundColor: colors.warning }]}
+            onPress={recordVideo}
+            disabled={uploadingMedia}
+          >
+            <Ionicons name="videocam" size={24} color="#fff" />
+            <Text style={styles.mediaButtonText}>Record Video</Text>
+          </TouchableOpacity>
         </View>
 
+        {/* Media Preview */}
+        {mediaFiles.length > 0 && (
+          <View style={styles.mediaPreviewContainer}>
+            <Text style={[styles.mediaPreviewTitle, { color: colors.text }]}>
+              Selected Media ({mediaFiles.length})
+            </Text>
+            <View style={styles.mediaGrid}>
+              {mediaFiles.map((media, index) => (
+                <View key={index} style={[styles.mediaItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Image
+                    source={{ uri: media.thumbnail || media.uri }}
+                    style={styles.mediaThumbnail}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.mediaOverlay}>
+                    <View style={styles.mediaTypeIndicator}>
+                      <Ionicons 
+                        name={media.type === 'video' ? 'play-circle' : 'image'} 
+                        size={16} 
+                        color="#fff" 
+                      />
+                    </View>
+                    <TouchableOpacity
+                      style={styles.removeMediaButton}
+                      onPress={() => removeMedia(index)}
+                    >
+                      <Ionicons name="close-circle" size={20} color="#ff4444" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Upload Status */}
+        {uploadingMedia && (
+          <View style={[styles.uploadStatusContainer, { backgroundColor: colors.info + '20' }]}>
+            <Ionicons name="cloud-upload" size={20} color={colors.info} />
+            <Text style={[styles.uploadStatusText, { color: colors.info }]}>
+              Uploading media files...
+            </Text>
+          </View>
+        )}
+
+        {/* Info Box */}
         <View style={[styles.infoBox, { backgroundColor: colors.info + '20' }]}>
           <Ionicons name="information-circle" size={20} color={colors.info} />
           <Text style={[styles.infoText, { color: colors.secondary }]}>
-            Camera feature will be implemented with proper permissions. For now, you can submit without media.
+            You can add up to 5 photos or videos captured with your camera. Max video length: 30 seconds. This ensures authentic, real-time evidence and prevents fake news.
+          </Text>
+        </View>
+
+        {/* Fake News Prevention Note */}
+        <View style={[styles.warningBox, { backgroundColor: colors.warning + '20' }]}>
+          <Ionicons name="shield-checkmark" size={20} color={colors.warning} />
+          <Text style={[styles.warningText, { color: colors.warning }]}>
+            📸 Camera Only: To prevent fake news and AI-generated content, only live camera capture is allowed. No gallery uploads or external files.
           </Text>
         </View>
 
@@ -579,6 +1000,14 @@ export default function CreateIncidentModal({
           {step === 3 && renderStep3()}
         </View>
       </View>
+      
+      <LocationSearchModal
+        visible={showLocationSearch}
+        onClose={() => setShowLocationSearch(false)}
+        onLocationSelect={handleLocationSelect}
+        currentLocation={currentLocation || undefined}
+        searchRadius={10}
+      />
     </Modal>
   );
 }
@@ -846,5 +1275,138 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  locationInput: {
+    flex: 1,
+  },
+  locationButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 48,
+  },
+  searchButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 48,
+  },
+  locationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    gap: 8,
+  },
+  locationText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  locationWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    gap: 8,
+  },
+  warningText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  // Media upload styles
+  mediaButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  mediaButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
+  },
+  mediaButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  mediaPreviewContainer: {
+    marginBottom: 20,
+  },
+  mediaPreviewTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  mediaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  mediaItem: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    borderWidth: 1,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  mediaThumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  mediaOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 4,
+  },
+  mediaTypeIndicator: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 12,
+    padding: 4,
+  },
+  removeMediaButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 10,
+    padding: 2,
+  },
+  uploadStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    gap: 8,
+  },
+  uploadStatusText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    gap: 8,
   },
 });

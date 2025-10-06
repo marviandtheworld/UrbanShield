@@ -85,3 +85,5 @@ FROM get_incidents_with_user_info()
 WHERE is_verified = true
 ORDER BY created_at DESC 
 LIMIT 5;
+
+

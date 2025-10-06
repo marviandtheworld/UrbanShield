@@ -7,6 +7,16 @@ interface ThemeContextType {
   themeMode: ThemeMode;
   isDark: boolean;
   setThemeMode: (mode: ThemeMode) => void;
+  colors: {
+    background: string;
+    card: string;
+    text: string;
+    secondary: string;
+    primary: string;
+    surface: string;
+    success: string;
+    warning: string;
+  };
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -14,7 +24,22 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    // Return fallback values instead of throwing error
+    return {
+      themeMode: 'light' as ThemeMode,
+      isDark: false,
+      setThemeMode: () => {},
+      colors: {
+        background: '#ffffff',
+        card: '#f8f9fa',
+        text: '#000000',
+        secondary: '#6c757d',
+        primary: '#007bff',
+        surface: '#ffffff',
+        success: '#28a745',
+        warning: '#ffc107'
+      }
+    };
   }
   return context;
 };
@@ -65,8 +90,19 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   };
 
+  const colors = {
+    background: isDark ? '#000000' : '#ffffff',
+    card: isDark ? '#1a1a1a' : '#f8f9fa',
+    text: isDark ? '#ffffff' : '#000000',
+    secondary: isDark ? '#a0a0a0' : '#6c757d',
+    primary: '#007bff',
+    surface: isDark ? '#2a2a2a' : '#ffffff',
+    success: '#28a745',
+    warning: '#ffc107'
+  };
+
   return (
-    <ThemeContext.Provider value={{ themeMode, isDark, setThemeMode }}>
+    <ThemeContext.Provider value={{ themeMode, isDark, setThemeMode, colors }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -173,3 +173,5 @@ SELECT
         THEN '✅ Other category works'
         ELSE '❌ Other category does not work'
     END as other_status;
+
+

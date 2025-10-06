@@ -9,7 +9,14 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "UrbanShield needs access to your location to show nearby incidents and set default location for reports.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "UrbanShield needs access to your location to provide location-based safety alerts.",
+        "NSLocationAlwaysUsageDescription": "UrbanShield needs access to your location to provide location-based safety alerts.",
+        "NSCameraUsageDescription": "UrbanShield needs access to your camera to capture photos and videos for incident reports.",
+        "NSPhotoLibraryUsageDescription": "UrbanShield needs access to your photo library to select photos and videos for incident reports."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +26,18 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_WIFI_STATE",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA"
+      ]
     },
     "web": {
       "output": "static",
@@ -39,7 +57,17 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "UrbanShield needs access to your location to provide location-based safety alerts.",
+          "locationAlwaysPermission": "UrbanShield needs access to your location to provide location-based safety alerts.",
+          "locationWhenInUsePermission": "UrbanShield needs access to your location to show nearby incidents and set default location for reports.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -43,3 +43,5 @@ SELECT COUNT(*) as profile_count FROM profiles;
 SELECT 'STEP 9: SAMPLE PROFILES' as test;
 SELECT id, full_name, username, user_type FROM profiles LIMIT 3;
 
+
+

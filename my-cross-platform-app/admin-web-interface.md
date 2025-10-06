@@ -83,3 +83,5 @@ The database includes the `admin` user type in the enum but the mobile app inter
 - Admin users should be created manually through database
 - Web interface should implement additional authentication layers
 
+
+

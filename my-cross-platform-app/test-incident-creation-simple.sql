@@ -89,3 +89,5 @@ SELECT
     array_agg(title) as incident_titles
 FROM get_incidents_with_user_info();
 
+
+

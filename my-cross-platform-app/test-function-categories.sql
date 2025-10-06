@@ -117,3 +117,5 @@ BEGIN
         RAISE NOTICE 'No users found';
     END IF;
 END $$;
+
+

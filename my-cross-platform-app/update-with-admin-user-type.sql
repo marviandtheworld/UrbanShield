@@ -105,3 +105,5 @@ SELECT
     'Admin User Type Added Successfully' as status,
     (SELECT COUNT(*) FROM pg_enum WHERE enumlabel = 'admin' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'user_type')) as admin_enum_exists;
 
+
+

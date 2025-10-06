@@ -129,3 +129,5 @@ FROM get_incidents_with_user_info()
 ORDER BY created_at DESC 
 LIMIT 10;
 
+
+

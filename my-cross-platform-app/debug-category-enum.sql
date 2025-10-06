@@ -109,3 +109,5 @@ SELECT
         THEN 'incident_severity enum exists'
         ELSE 'incident_severity enum MISSING'
     END as severity_enum_status;
+
+

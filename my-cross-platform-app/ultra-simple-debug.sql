@@ -30,3 +30,5 @@ WHERE routine_name = 'get_incidents_with_user_info';
 SELECT 'STEP 6: FUNCTION CALL' as test;
 SELECT COUNT(*) FROM get_incidents_with_user_info();
 
+
+

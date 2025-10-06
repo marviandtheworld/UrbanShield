@@ -121,3 +121,5 @@ SELECT 'incident_status' as enum_name, enumlabel as value
 FROM pg_enum 
 WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'incident_status')
 ORDER BY enum_name, value;
+
+

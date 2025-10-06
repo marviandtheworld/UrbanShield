@@ -63,3 +63,5 @@ SELECT 'INCIDENTS COMMENTS COUNT' as test;
 SELECT id, title, comments_count 
 FROM incidents 
 WHERE id = (SELECT id FROM incidents LIMIT 1);
+
+

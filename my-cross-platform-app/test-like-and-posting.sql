@@ -139,3 +139,5 @@ SELECT
         WHEN EXISTS (SELECT 1 FROM incidents WHERE category = 'other') THEN '✅ Other category works'
         ELSE '❌ Other category failed'
     END as other_test;
+
+

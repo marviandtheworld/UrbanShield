@@ -75,3 +75,5 @@ SELECT
         THEN 'COMMENTS TABLE MISSING - Run create-comments-table.sql'
         ELSE 'Comments table exists'
     END as status;
+
+

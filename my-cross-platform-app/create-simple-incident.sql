@@ -46,3 +46,5 @@ SELECT COUNT(*) as count FROM incidents;
 SELECT 'CREATED INCIDENT' as step;
 SELECT id, title, created_at FROM incidents ORDER BY created_at DESC LIMIT 1;
 
+
+

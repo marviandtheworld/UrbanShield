@@ -322,3 +322,5 @@ SELECT
     (SELECT COUNT(*) FROM profiles) as total_profiles,
     (SELECT COUNT(*) FROM get_incidents_with_user_info()) as visible_incidents;
 
+
+

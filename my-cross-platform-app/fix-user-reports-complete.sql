@@ -178,3 +178,5 @@ SELECT id, title, reporter_id, created_at
 FROM incidents 
 ORDER BY created_at DESC;
 
+
+

@@ -69,3 +69,5 @@ GRANT EXECUTE ON FUNCTION get_comments_with_user_info(UUID) TO anon, authenticat
 -- 7. Test the setup
 SELECT 'SETUP COMPLETE' as status;
 SELECT 'Comments table created and configured' as message;
+
+

@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Session } from '@supabase/supabase-js';
 import React, { useEffect, useState } from 'react';
 import {
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { Colors } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -17,11 +17,11 @@ import { UserType } from '../../lib/userTypes';
 import AuthModal from './AuthModal';
 import ChatBot from './ChatBot';
 import CreateIncidentModal from './CreateIncidentModal';
-import CustomMapView from './CustomMapView';
 import DebugPanel from './DebugPanel';
 import GuestHomeboard from './GuestHomeboard';
 import NewsView from './NewsView';
 import ProfileView from './ProfileView';
+import SafetyMap from './SafetyMap';
 import SettingsModal from './SettingsModal';
 import UserTypeDashboard from './UserTypeDashboard';
 
@@ -213,9 +213,12 @@ export default function UrbanShieldApp() {
         />
       )}
       {activeView === 'map' && (
-        <CustomMapView 
-          session={session}
-          onAuthRequired={handleAuthRequired}
+        <SafetyMap 
+          onIncidentSelect={(incident) => {
+            console.log('Incident selected:', incident);
+            // You can add navigation to incident details here
+          }}
+          showUserLocation={true}
         />
       )}
       {activeView === 'news' && (

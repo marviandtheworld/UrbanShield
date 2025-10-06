@@ -104,3 +104,5 @@ SELECT
         ELSE 'ISSUE: Some incidents not visible'
     END as result;
 
+
+

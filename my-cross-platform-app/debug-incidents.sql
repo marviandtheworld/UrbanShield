@@ -95,3 +95,5 @@ LEFT JOIN profiles p ON i.reporter_id = p.id
 ORDER BY i.created_at DESC
 LIMIT 10;
 
+
+

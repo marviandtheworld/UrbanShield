@@ -259,6 +259,12 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
         return;
       }
 
+      // Get current incident to update comment count
+      const currentIncident = incidents.find(i => i.id === incidentId);
+      if (!currentIncident) return;
+
+      const newCommentsCount = (currentIncident.comments_count || 0) + 1;
+
       // Insert comment into database
       const { data, error } = await supabase
         .from('comments')
@@ -274,8 +280,44 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
 
       console.log('✅ Comment added for incident:', incidentId, 'Comment ID:', data?.[0]?.id);
       
-      // Refresh comments for this incident
+      // Update local state immediately
+      console.log('🔄 Updating local state - incident:', incidentId, 'new count:', newCommentsCount);
+      setIncidents(prev => {
+        const updated = prev.map(incident => 
+          incident.id === incidentId 
+            ? { ...incident, comments_count: newCommentsCount }
+            : incident
+        );
+        console.log('🔄 Local state updated:', updated.find(i => i.id === incidentId)?.comments_count);
+        return updated;
+      });
+      
+      // Refresh comments for this incident to get the new comment
       await fetchComments(incidentId);
+      
+      // Force update the comment count in the database
+      const { error: updateError } = await supabase
+        .from('incidents')
+        .update({ comments_count: newCommentsCount })
+        .eq('id', incidentId);
+
+      if (updateError) {
+        console.warn('Failed to update comment count:', updateError);
+      } else {
+        console.log('✅ Comment count updated in database:', newCommentsCount);
+      }
+
+      // Force UI refresh by updating the incidents state again
+      setTimeout(() => {
+        setIncidents(prev => 
+          prev.map(incident => 
+            incident.id === incidentId 
+              ? { ...incident, comments_count: newCommentsCount }
+              : incident
+          )
+        );
+        console.log('🔄 Force refreshed UI for incident:', incidentId);
+      }, 100);
       
       Alert.alert('Success', 'Comment added successfully!');
       
@@ -374,6 +416,40 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
         newSet.delete(incidentId);
         return newSet;
       });
+    }
+  };
+
+  const refreshIncidentData = async (incidentId: string) => {
+    try {
+      // Get the latest incident data from the database
+      const { data, error } = await supabase
+        .from('incidents')
+        .select('comments_count, likes_count, views_count')
+        .eq('id', incidentId)
+        .single();
+
+      if (error) {
+        console.error('Error refreshing incident data:', error);
+        return;
+      }
+
+      // Update local state with the latest data
+      setIncidents(prev => 
+        prev.map(incident => 
+          incident.id === incidentId 
+            ? { 
+                ...incident, 
+                comments_count: data.comments_count || 0,
+                likes: data.likes_count || 0,
+                views: data.views_count || 0
+              }
+            : incident
+        )
+      );
+
+      console.log('✅ Incident data refreshed for:', incidentId, 'Comments:', data.comments_count);
+    } catch (error) {
+      console.error('Error refreshing incident data:', error);
     }
   };
 
@@ -587,10 +663,27 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
                     source={{ uri: incident.images[0] }} 
                     style={styles.incidentImage}
                     resizeMode="cover"
+                    onError={(error) => {
+                      console.error('❌ Image load error:', error.nativeEvent.error);
+                      console.error('❌ Failed image URL:', incident.images[0]);
+                      console.error('❌ Incident ID:', incident.id);
+                      console.error('❌ All images:', incident.images);
+                    }}
+                    onLoad={() => {
+                      console.log('✅ Image loaded successfully:', incident.images[0]);
+                      console.log('✅ Incident ID:', incident.id);
+                    }}
+                    onLoadStart={() => {
+                      console.log('🔄 Starting to load image:', incident.images[0]);
+                    }}
+                    onLoadEnd={() => {
+                      console.log('🏁 Finished loading image:', incident.images[0]);
+                    }}
                   />
                 ) : (
                   <View style={styles.placeholderImage}>
                     <Ionicons name="camera" size={32} color={colors.secondary} />
+                    {console.log('📷 No images for incident:', incident.id, 'Images array:', incident.images)}
                   </View>
                 )}
                 <View style={styles.viewBadge}>
@@ -676,7 +769,7 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
                       styles.actionText, 
                       { color: expandedComments.has(incident.id) ? colors.primary : colors.secondary }
                     ]}>
-                      {incident.comments_count}
+                      {loadingComments.has(incident.id) ? "..." : incident.comments_count}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
