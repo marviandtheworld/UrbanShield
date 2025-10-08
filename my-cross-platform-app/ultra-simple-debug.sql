@@ -32,3 +32,6 @@ SELECT COUNT(*) FROM get_incidents_with_user_info();
 
 
 
+
+
+

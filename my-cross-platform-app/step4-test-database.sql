@@ -58,3 +58,6 @@ SELECT
 FROM storage.objects 
 WHERE bucket_id = 'incident-media';
 
+
+
+

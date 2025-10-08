@@ -269,3 +269,6 @@ console.log('- Added comprehensive logging for troubleshooting');
 console.log('- Ensured proper RLS policies for storage access');
 console.log('- Added fallback handling for missing images');
 
+
+
+

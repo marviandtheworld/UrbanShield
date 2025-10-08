@@ -48,3 +48,6 @@ SELECT
 FROM storage.buckets 
 WHERE id = 'incident-media';
 
+
+
+

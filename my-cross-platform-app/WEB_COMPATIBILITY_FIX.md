@@ -198,3 +198,6 @@ npx expo run:ios
 The app gracefully handles platform differences and provides the best experience for each platform.
 
 
+
+
+

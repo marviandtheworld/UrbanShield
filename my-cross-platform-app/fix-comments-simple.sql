@@ -71,3 +71,6 @@ SELECT 'SETUP COMPLETE' as status;
 SELECT 'Comments table created and configured' as message;
 
 
+
+
+

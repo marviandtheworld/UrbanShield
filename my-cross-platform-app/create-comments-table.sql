@@ -124,3 +124,6 @@ GRANT ALL ON comments TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION get_comments_with_user_info(UUID) TO anon, authenticated;
 
 
+
+
+

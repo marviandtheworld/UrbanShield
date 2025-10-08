@@ -169,3 +169,6 @@ console.log('- Permissive RLS policies for post visibility');
 console.log('- Image handling maintained');
 console.log('- Web and mobile compatibility');
 console.log('- All incidents visible immediately after posting');
+
+
+
