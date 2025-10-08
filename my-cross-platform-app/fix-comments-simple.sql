@@ -74,3 +74,7 @@ SELECT 'Comments table created and configured' as message;
 
 
 
+
+
+
+

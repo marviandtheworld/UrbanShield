@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Dimensions, Platform, StyleSheet } from 'react-native';
 import LocationService, { LocationData } from '../../lib/locationService';
 import { supabase } from '../../lib/supabase';
-import WebMap from './WebMap';
+import MobileMap from './MobileMap';
 import WebMapFallback from './WebMapFallback';
+import WebMapLeaflet from './WebMapLeaflet';
 
 const { width, height } = Dimensions.get('window');
 
@@ -68,7 +69,7 @@ const SafetyMap: React.FC<SafetyMapProps> = ({
       if (rpcError) {
         console.warn('⚠️ RPC failed, trying direct query:', rpcError);
         
-        // Fallback to direct table query
+        // Fallback to direct table query - show ALL incidents including unverified
         const { data: directData, error: directError } = await supabase
           .from('incidents')
           .select(`
@@ -195,10 +196,10 @@ const SafetyMap: React.FC<SafetyMapProps> = ({
     }
   };
 
-  // Use WebMap for web platform, WebMapFallback for mobile fallback
+  // Use appropriate map component based on platform
   if (Platform.OS === 'web') {
     return (
-      <WebMap
+      <WebMapLeaflet
         incidents={incidents}
         onIncidentSelect={onIncidentSelect}
         userLocation={userLocation}
@@ -207,13 +208,25 @@ const SafetyMap: React.FC<SafetyMapProps> = ({
     );
   }
 
-  // For mobile platforms, use WebMapFallback as fallback
-  return (
-    <WebMapFallback 
-      incidents={incidents}
-      onIncidentSelect={onIncidentSelect}
-    />
-  );
+  // For mobile platforms, try MobileMap first, fallback to WebMapFallback
+  try {
+    return (
+      <MobileMap
+        incidents={incidents}
+        onIncidentSelect={onIncidentSelect}
+        userLocation={userLocation}
+        initialRegion={initialRegion}
+      />
+    );
+  } catch (error) {
+    console.warn('MobileMap failed, using fallback:', error);
+    return (
+      <WebMapFallback
+        incidents={incidents}
+        onIncidentSelect={onIncidentSelect}
+      />
+    );
+  }
 };
 
 const styles = StyleSheet.create({

@@ -7,6 +7,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { Colors } from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { UserType, getUserTypeConfig, hasPermission } from '../../lib/userTypes';
 
 interface UserTypeDashboardProps {
@@ -16,42 +18,61 @@ interface UserTypeDashboardProps {
 }
 
 export default function UserTypeDashboard({ userType, userProfile, onNavigate }: UserTypeDashboardProps) {
+  const { isDark, setThemeMode } = useTheme();
+  const colors = Colors[isDark ? 'dark' : 'light'];
   const config = getUserTypeConfig(userType);
 
   const renderFeatureCard = (feature: string, index: number) => (
-    <TouchableOpacity key={index} style={styles.featureCard}>
+    <TouchableOpacity key={index} style={[styles.featureCard, { backgroundColor: colors.card }]}>
       <Ionicons name="checkmark-circle" size={20} color={config.color} />
-      <Text style={styles.featureText}>{feature}</Text>
+      <Text style={[styles.featureText, { color: colors.text }]}>{feature}</Text>
     </TouchableOpacity>
   );
 
   const renderQuickAction = (title: string, icon: string, onPress: () => void, enabled: boolean = true) => (
     <TouchableOpacity
-      style={[styles.quickAction, !enabled && styles.disabledAction]}
+      style={[styles.quickAction, { backgroundColor: colors.card, borderColor: colors.border }, !enabled && styles.disabledAction]}
       onPress={onPress}
       disabled={!enabled}
     >
-      <Ionicons name={icon as any} size={24} color={enabled ? config.color : '#6B7280'} />
-      <Text style={[styles.quickActionText, !enabled && styles.disabledText]}>{title}</Text>
+      <Ionicons name={icon as any} size={24} color={enabled ? config.color : colors.secondary} />
+      <Text style={[styles.quickActionText, { color: enabled ? colors.text : colors.secondary }, !enabled && styles.disabledText]}>{title}</Text>
     </TouchableOpacity>
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
+      {/* Theme Toggle */}
+      <View style={[styles.themeToggle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <TouchableOpacity
+          style={[styles.themeButton, { backgroundColor: colors.surface }]}
+          onPress={() => setThemeMode(isDark ? 'light' : 'dark')}
+        >
+          <Ionicons 
+            name={isDark ? "sunny" : "moon"} 
+            size={20} 
+            color={colors.text} 
+          />
+          <Text style={[styles.themeText, { color: colors.text }]}>
+            {isDark ? 'Light Mode' : 'Dark Mode'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Welcome Section */}
-      <View style={[styles.welcomeCard, { borderLeftColor: config.color }]}>
+      <View style={[styles.welcomeCard, { backgroundColor: colors.card, borderLeftColor: config.color }]}>
         <View style={styles.welcomeHeader}>
           <Ionicons name={config.icon as any} size={32} color={config.color} />
           <View style={styles.welcomeText}>
-            <Text style={styles.welcomeTitle}>Welcome, {userProfile?.full_name || 'User'}!</Text>
-            <Text style={styles.welcomeSubtitle}>{config.description}</Text>
+            <Text style={[styles.welcomeTitle, { color: colors.text }]}>Welcome, {userProfile?.full_name || 'User'}!</Text>
+            <Text style={[styles.welcomeSubtitle, { color: colors.secondary }]}>{config.description}</Text>
           </View>
         </View>
       </View>
 
       {/* Quick Actions */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
         <View style={styles.quickActionsGrid}>
           {renderQuickAction(
             'Report Incident',
@@ -94,7 +115,7 @@ export default function UserTypeDashboard({ userType, userProfile, onNavigate }:
 
       {/* Features */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Your Features</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Features</Text>
         <View style={styles.featuresList}>
           {config.features.map(renderFeatureCard)}
         </View>
@@ -102,23 +123,23 @@ export default function UserTypeDashboard({ userType, userProfile, onNavigate }:
 
       {/* Stats */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Your Stats</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Stats</Text>
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{userProfile?.reports_filed || 0}</Text>
-            <Text style={styles.statLabel}>Reports Filed</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{userProfile?.reports_filed || 0}</Text>
+            <Text style={[styles.statLabel, { color: colors.secondary }]}>Reports Filed</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{userProfile?.reports_resolved || 0}</Text>
-            <Text style={styles.statLabel}>Reports Resolved</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{userProfile?.reports_resolved || 0}</Text>
+            <Text style={[styles.statLabel, { color: colors.secondary }]}>Reports Resolved</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{userProfile?.streak_days || 0}</Text>
-            <Text style={styles.statLabel}>Day Streak</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{userProfile?.streak_days || 0}</Text>
+            <Text style={[styles.statLabel, { color: colors.secondary }]}>Day Streak</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{userProfile?.reputation_score || 0}</Text>
-            <Text style={styles.statLabel}>Reputation</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{userProfile?.reputation_score || 0}</Text>
+            <Text style={[styles.statLabel, { color: colors.secondary }]}>Reputation</Text>
           </View>
         </View>
       </View>
@@ -126,30 +147,30 @@ export default function UserTypeDashboard({ userType, userProfile, onNavigate }:
       {/* User Type Specific Content */}
       {userType === 'parent' && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Child Safety</Text>
-          <View style={styles.specialCard}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Child Safety</Text>
+          <View style={[styles.specialCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Ionicons name="school" size={24} color={config.color} />
-            <Text style={styles.specialCardText}>Monitor school zone safety and receive alerts about incidents near your child's school.</Text>
+            <Text style={[styles.specialCardText, { color: colors.text }]}>Monitor school zone safety and receive alerts about incidents near your child's school.</Text>
           </View>
         </View>
       )}
 
       {userType === 'business' && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Business Safety</Text>
-          <View style={styles.specialCard}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Business Safety</Text>
+          <View style={[styles.specialCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Ionicons name="business" size={24} color={config.color} />
-            <Text style={styles.specialCardText}>Track crime statistics in your business area and create safety announcements for customers.</Text>
+            <Text style={[styles.specialCardText, { color: colors.text }]}>Track crime statistics in your business area and create safety announcements for customers.</Text>
           </View>
         </View>
       )}
 
       {userType === 'government' && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Public Safety Management</Text>
-          <View style={styles.specialCard}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Public Safety Management</Text>
+          <View style={[styles.specialCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Ionicons name="shield-checkmark" size={24} color={config.color} />
-            <Text style={styles.specialCardText}>Access comprehensive analytics and manage public safety initiatives across the community.</Text>
+            <Text style={[styles.specialCardText, { color: colors.text }]}>Access comprehensive analytics and manage public safety initiatives across the community.</Text>
           </View>
         </View>
       )}
@@ -160,11 +181,27 @@ export default function UserTypeDashboard({ userType, userProfile, onNavigate }:
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
     padding: 16,
   },
+  themeToggle: {
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  themeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  themeText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   welcomeCard: {
-    backgroundColor: '#1a1a1a',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -181,12 +218,10 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 4,
   },
   welcomeSubtitle: {
     fontSize: 14,
-    color: '#737373',
   },
   section: {
     marginBottom: 24,
@@ -194,7 +229,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
     marginBottom: 12,
   },
   quickActionsGrid: {
@@ -203,27 +237,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   quickAction: {
-    backgroundColor: '#1a1a1a',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     width: '48%',
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#262626',
   },
   disabledAction: {
     opacity: 0.5,
   },
   quickActionText: {
-    color: '#fff',
     fontSize: 12,
     fontWeight: '500',
     marginTop: 8,
     textAlign: 'center',
   },
   disabledText: {
-    color: '#6B7280',
+    opacity: 0.6,
   },
   featuresList: {
     gap: 8,
@@ -231,12 +262,10 @@ const styles = StyleSheet.create({
   featureCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
     borderRadius: 8,
     padding: 12,
   },
   featureText: {
-    color: '#fff',
     fontSize: 14,
     marginLeft: 12,
     flex: 1,
@@ -247,7 +276,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   statCard: {
-    backgroundColor: '#1a1a1a',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -257,25 +285,20 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#737373',
     textAlign: 'center',
   },
   specialCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#262626',
   },
   specialCardText: {
-    color: '#fff',
     fontSize: 14,
     marginLeft: 12,
     flex: 1,

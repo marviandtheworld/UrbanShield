@@ -127,3 +127,7 @@ GRANT EXECUTE ON FUNCTION get_comments_with_user_info(UUID) TO anon, authenticat
 
 
 
+
+
+
+
