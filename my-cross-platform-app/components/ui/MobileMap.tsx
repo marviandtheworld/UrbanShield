@@ -73,6 +73,20 @@ const MobileMap: React.FC<MobileMapProps> = ({
   const [mapError, setMapError] = useState<string | null>(null);
   const mapRef = useRef<any>(null);
 
+  // Fallback colors in case theme context is not available
+  const safeColors = {
+    background: colors?.background || '#ffffff',
+    text: colors?.text || '#000000',
+    primary: colors?.primary || '#3b82f6',
+    secondary: colors?.secondary || '#6b7280',
+    warning: colors?.warning || '#f59e0b',
+    card: colors?.card || '#f9fafb',
+    border: colors?.border || '#e5e7eb'
+  };
+
+  console.log('🗺️ MobileMap: Colors from theme:', colors);
+  console.log('🗺️ MobileMap: SafeColors:', safeColors);
+
   // Default region (Cebu City, Philippines)
   const defaultRegion = {
     latitude: 10.3157,
@@ -177,43 +191,56 @@ const MobileMap: React.FC<MobileMapProps> = ({
 
   if (!mapsAvailable) {
     // Throw error to trigger fallback in SafetyMap
+    console.error('❌ React Native Maps not available');
     throw new Error('React Native Maps not available');
   }
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <Ionicons name="map" size={48} color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>Loading map...</Text>
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: safeColors.background }]}>
+        <Ionicons name="map" size={48} color={safeColors.primary} />
+        <Text style={[styles.loadingText, { color: safeColors.text }]}>Loading map...</Text>
       </View>
     );
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Map Container */}
-      <View style={styles.mapContainer}>
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          provider={PROVIDER_DEFAULT}
-          initialRegion={currentRegion}
-          onPress={handleMapPress}
-          showsUserLocation={!!userLocation}
-          showsMyLocationButton={false}
-          showsCompass={true}
-          showsScale={true}
-          showsBuildings={true}
-          showsTraffic={false}
-          showsIndoors={false}
-          mapType="standard"
-          loadingEnabled={true}
-          loadingIndicatorColor={colors.primary}
-          loadingBackgroundColor={colors.background}
-        >
+  try {
+    return (
+      <View style={[styles.container, { backgroundColor: safeColors.background }]}>
+        {/* Map Container */}
+        <View style={styles.mapContainer}>
+          <MapView
+            ref={mapRef}
+            style={styles.map}
+            provider={PROVIDER_DEFAULT}
+            initialRegion={currentRegion}
+            onPress={handleMapPress}
+            showsUserLocation={!!userLocation}
+            showsMyLocationButton={false}
+            showsCompass={true}
+            showsScale={true}
+            showsBuildings={true}
+            showsTraffic={false}
+            showsIndoors={false}
+            mapType="standard"
+            loadingEnabled={true}
+            loadingIndicatorColor={safeColors.primary}
+            loadingBackgroundColor={safeColors.background}
+          >
           {/* Incident Markers */}
           {incidents.map((incident) => {
-            if (incident.latitude === 0 && incident.longitude === 0) return null;
+            console.log('🗺️ Processing incident for map:', {
+              id: incident.id,
+              title: incident.title,
+              category: incident.category,
+              latitude: incident.latitude,
+              longitude: incident.longitude
+            });
+            
+            if (incident.latitude === 0 && incident.longitude === 0) {
+              console.log('⚠️ Skipping incident with no coordinates:', incident.title);
+              return null;
+            }
             
             return (
               <Marker
@@ -223,22 +250,35 @@ const MobileMap: React.FC<MobileMapProps> = ({
                   longitude: incident.longitude,
                 }}
                 title={incident.title}
-                description={incident.description}
+                description={`${incident.category} • ${incident.severity}${incident.is_verified ? ' • Verified' : ''}`}
                 onPress={() => handleIncidentPress(incident)}
-                pinColor={getCategoryColor(incident.category)}
               >
                 <View style={[
                   styles.customMarker,
-                  { backgroundColor: getCategoryColor(incident.category) }
+                  { 
+                    backgroundColor: getCategoryColor(incident.category),
+                    borderColor: incident.is_verified ? '#22c55e' : 'transparent',
+                    borderWidth: incident.is_verified ? 3 : 0,
+                    shadowColor: getCategoryColor(incident.category),
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 4,
+                    elevation: 5,
+                  }
                 ]}>
                   <Ionicons 
                     name={getCategoryIcon(incident.category) as any} 
-                    size={20} 
+                    size={22} 
                     color="#fff" 
                   />
                   {incident.is_urgent && (
                     <View style={styles.urgentIndicator}>
-                      <Ionicons name="flash" size={8} color="#fff" />
+                      <Ionicons name="flash" size={10} color="#fff" />
+                    </View>
+                  )}
+                  {incident.is_verified && (
+                    <View style={styles.verifiedIndicator}>
+                      <Ionicons name="checkmark-circle" size={12} color="#22c55e" />
                     </View>
                   )}
                 </View>
@@ -251,24 +291,24 @@ const MobileMap: React.FC<MobileMapProps> = ({
         <View style={styles.mapControls}>
           {userLocation && (
             <TouchableOpacity
-              style={[styles.controlButton, { backgroundColor: colors.card }]}
+              style={[styles.controlButton, { backgroundColor: safeColors.card }]}
               onPress={centerOnUserLocation}
             >
-              <Ionicons name="locate" size={20} color={colors.primary} />
+              <Ionicons name="locate" size={20} color={safeColors.primary} />
             </TouchableOpacity>
           )}
           
           <TouchableOpacity
-            style={[styles.controlButton, { backgroundColor: colors.card }]}
+            style={[styles.controlButton, { backgroundColor: safeColors.card }]}
             onPress={centerOnIncidents}
           >
-            <Ionicons name="search" size={20} color={colors.primary} />
+            <Ionicons name="search" size={20} color={safeColors.primary} />
           </TouchableOpacity>
         </View>
 
         {/* Map Legend */}
-        <View style={[styles.mapLegend, { backgroundColor: colors.card }]}>
-          <Text style={[styles.legendTitle, { color: colors.text }]}>Incident Types</Text>
+        <View style={[styles.mapLegend, { backgroundColor: safeColors.card }]}>
+          <Text style={[styles.legendTitle, { color: safeColors.text }]}>Incident Types</Text>
           <View style={styles.legendItems}>
             {['crime', 'fire', 'accident', 'flood', 'earthquake'].map((category) => (
               <View key={category} style={styles.legendItem}>
@@ -276,7 +316,7 @@ const MobileMap: React.FC<MobileMapProps> = ({
                   styles.legendColor, 
                   { backgroundColor: getCategoryColor(category) }
                 ]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>
+                <Text style={[styles.legendText, { color: safeColors.text }]}>
                   {category.charAt(0).toUpperCase() + category.slice(1)}
                 </Text>
               </View>
@@ -286,16 +326,31 @@ const MobileMap: React.FC<MobileMapProps> = ({
       </View>
 
       {/* Incidents Summary */}
-      <View style={[styles.summaryContainer, { backgroundColor: colors.card }]}>
-        <Text style={[styles.summaryTitle, { color: colors.text }]}>
+      <View style={[styles.summaryContainer, { backgroundColor: safeColors.card }]}>
+        <Text style={[styles.summaryTitle, { color: safeColors.text }]}>
           {incidents.length} Incidents Reported
         </Text>
-        <Text style={[styles.summarySubtitle, { color: colors.secondary }]}>
+        <Text style={[styles.summarySubtitle, { color: safeColors.secondary }]}>
           Tap markers for details
         </Text>
       </View>
     </View>
   );
+  } catch (error) {
+    console.error('❌ MobileMap rendering error:', error);
+    return (
+      <View style={[styles.container, styles.errorContainer, { backgroundColor: safeColors.background }]}>
+        <Ionicons name="alert-circle" size={48} color={safeColors.warning} />
+        <Text style={[styles.errorTitle, { color: safeColors.text }]}>Map Error</Text>
+        <Text style={[styles.errorText, { color: safeColors.secondary }]}>
+          Unable to load map. Please try again.
+        </Text>
+        <Text style={[styles.errorText, { color: safeColors.secondary }]}>
+          Error: {error instanceof Error ? error.message : 'Unknown error'}
+        </Text>
+      </View>
+    );
+  }
 };
 
 const styles = StyleSheet.create({
@@ -333,6 +388,40 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  customMarker: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  urgentIndicator: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#ff4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verifiedIndicator: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   mapControls: {
     position: 'absolute',
@@ -388,29 +477,6 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 10,
     fontWeight: '500',
-  },
-  customMarker: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  urgentIndicator: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#ff4444',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   summaryContainer: {
     padding: 16,

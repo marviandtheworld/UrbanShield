@@ -57,6 +57,20 @@ const WebMapLeaflet: React.FC<WebMapLeafletProps> = ({
 }) => {
   const { colors } = useTheme();
   const mapRef = useRef<HTMLDivElement>(null);
+
+  // Fallback colors in case theme context is not available
+  const safeColors = {
+    background: colors?.background || '#ffffff',
+    text: colors?.text || '#000000',
+    primary: colors?.primary || '#3b82f6',
+    secondary: colors?.secondary || '#6b7280',
+    warning: colors?.warning || '#f59e0b',
+    card: colors?.card || '#f9fafb',
+    border: colors?.border || '#e5e7eb'
+  };
+
+  console.log('🗺️ WebMapLeaflet: Colors from theme:', colors);
+  console.log('🗺️ WebMapLeaflet: SafeColors:', safeColors);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,35 +170,51 @@ const WebMapLeaflet: React.FC<WebMapLeafletProps> = ({
     return colorMap[category] || '#737373';
   };
 
-  const createCustomIcon = (category: string, isUrgent: boolean) => {
+  const createCustomIcon = (category: string, isUrgent: boolean, isVerified: boolean) => {
     const color = getCategoryColor(category);
     const iconName = getCategoryIcon(category);
     
+    // Use Unicode symbols for better compatibility
+    const iconSymbols = {
+      'shield': '🛡️',
+      'flame': '🔥',
+      'car': '🚗',
+      'water': '💧',
+      'earth': '🌍',
+      'pulse': '💓',
+      'ellipsis-horizontal': '⚫'
+    };
+    
+    const iconSymbol = iconSymbols[iconName] || '⚫';
+    
     const iconHtml = `
       <div style="
-        width: 32px;
-        height: 32px;
+        width: 40px;
+        height: 40px;
         background-color: ${color};
+        border: 3px solid ${isVerified ? '#22c55e' : '#fff'};
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 16px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        font-size: 20px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         position: relative;
+        cursor: pointer;
       ">
-        <i class="ionicon ion-${iconName}" style="font-size: 16px;"></i>
-        ${isUrgent ? '<div style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; background-color: #ff4444; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="ionicon ion-flash" style="font-size: 8px; color: white;"></i></div>' : ''}
+        <span style="font-size: 20px;">${iconSymbol}</span>
+        ${isUrgent ? '<div style="position: absolute; top: -4px; right: -4px; width: 16px; height: 16px; background-color: #ff4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px;">⚡</div>' : ''}
+        ${isVerified ? '<div style="position: absolute; bottom: -4px; right: -4px; width: 18px; height: 18px; background-color: #22c55e; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">✓</div>' : ''}
       </div>
     `;
 
     return L.divIcon({
       html: iconHtml,
       className: 'custom-marker',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      popupAnchor: [0, -16],
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+      popupAnchor: [0, -20],
     });
   };
 
@@ -199,10 +229,21 @@ const WebMapLeaflet: React.FC<WebMapLeafletProps> = ({
 
     // Add incident markers
     incidents.forEach((incident) => {
-      if (incident.latitude === 0 && incident.longitude === 0) return;
+      console.log('🗺️ Processing incident for web map:', {
+        id: incident.id,
+        title: incident.title,
+        category: incident.category,
+        latitude: incident.latitude,
+        longitude: incident.longitude
+      });
+      
+      if (incident.latitude === 0 && incident.longitude === 0) {
+        console.log('⚠️ Skipping incident with no coordinates:', incident.title);
+        return;
+      }
 
       const marker = L.marker([incident.latitude, incident.longitude], {
-        icon: createCustomIcon(incident.category, incident.is_urgent)
+        icon: createCustomIcon(incident.category, incident.is_urgent, incident.is_verified)
       });
 
       const popupContent = `
@@ -340,10 +381,10 @@ const WebMapLeaflet: React.FC<WebMapLeafletProps> = ({
 
   if (!leafletAvailable) {
     return (
-      <View style={[styles.container, styles.errorContainer, { backgroundColor: colors.background }]}>
-        <Ionicons name="alert-circle" size={48} color={colors.warning} />
-        <Text style={[styles.errorTitle, { color: colors.text }]}>Maps Not Available</Text>
-        <Text style={[styles.errorText, { color: colors.secondary }]}>
+      <View style={[styles.container, styles.errorContainer, { backgroundColor: safeColors.background }]}>
+        <Ionicons name="alert-circle" size={48} color={safeColors.warning} />
+        <Text style={[styles.errorTitle, { color: safeColors.text }]}>Maps Not Available</Text>
+        <Text style={[styles.errorText, { color: safeColors.secondary }]}>
           Leaflet maps are not available on this platform
         </Text>
       </View>
@@ -352,25 +393,25 @@ const WebMapLeaflet: React.FC<WebMapLeafletProps> = ({
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <Ionicons name="map" size={48} color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>Loading map...</Text>
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: safeColors.background }]}>
+        <Ionicons name="map" size={48} color={safeColors.primary} />
+        <Text style={[styles.loadingText, { color: safeColors.text }]}>Loading map...</Text>
       </View>
     );
   }
 
   if (mapError) {
     return (
-      <View style={[styles.container, styles.errorContainer, { backgroundColor: colors.background }]}>
-        <Ionicons name="alert-circle" size={48} color={colors.warning} />
-        <Text style={[styles.errorTitle, { color: colors.text }]}>Map Error</Text>
-        <Text style={[styles.errorText, { color: colors.secondary }]}>{mapError}</Text>
+      <View style={[styles.container, styles.errorContainer, { backgroundColor: safeColors.background }]}>
+        <Ionicons name="alert-circle" size={48} color={safeColors.warning} />
+        <Text style={[styles.errorTitle, { color: safeColors.text }]}>Map Error</Text>
+        <Text style={[styles.errorText, { color: safeColors.secondary }]}>{mapError}</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: safeColors.background }]}>
       {/* Map Container */}
       <View style={styles.mapContainer}>
         <div
@@ -387,24 +428,24 @@ const WebMapLeaflet: React.FC<WebMapLeafletProps> = ({
         <View style={styles.mapControls}>
           {userLocation && (
             <TouchableOpacity
-              style={[styles.controlButton, { backgroundColor: colors.card }]}
+              style={[styles.controlButton, { backgroundColor: safeColors.card }]}
               onPress={centerOnUserLocation}
             >
-              <Ionicons name="locate" size={20} color={colors.primary} />
+              <Ionicons name="locate" size={20} color={safeColors.primary} />
             </TouchableOpacity>
           )}
           
           <TouchableOpacity
-            style={[styles.controlButton, { backgroundColor: colors.card }]}
+            style={[styles.controlButton, { backgroundColor: safeColors.card }]}
             onPress={centerOnIncidents}
           >
-            <Ionicons name="search" size={20} color={colors.primary} />
+            <Ionicons name="search" size={20} color={safeColors.primary} />
           </TouchableOpacity>
         </View>
 
         {/* Map Legend */}
-        <View style={[styles.mapLegend, { backgroundColor: colors.card }]}>
-          <Text style={[styles.legendTitle, { color: colors.text }]}>Incident Types</Text>
+        <View style={[styles.mapLegend, { backgroundColor: safeColors.card }]}>
+          <Text style={[styles.legendTitle, { color: safeColors.text }]}>Incident Types</Text>
           <View style={styles.legendItems}>
             {['crime', 'fire', 'accident', 'flood', 'earthquake'].map((category) => (
               <View key={category} style={styles.legendItem}>
@@ -412,7 +453,7 @@ const WebMapLeaflet: React.FC<WebMapLeafletProps> = ({
                   styles.legendColor, 
                   { backgroundColor: getCategoryColor(category) }
                 ]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>
+                <Text style={[styles.legendText, { color: safeColors.text }]}>
                   {category.charAt(0).toUpperCase() + category.slice(1)}
                 </Text>
               </View>
@@ -422,11 +463,11 @@ const WebMapLeaflet: React.FC<WebMapLeafletProps> = ({
       </View>
 
       {/* Incidents Summary */}
-      <View style={[styles.summaryContainer, { backgroundColor: colors.card }]}>
-        <Text style={[styles.summaryTitle, { color: colors.text }]}>
+      <View style={[styles.summaryContainer, { backgroundColor: safeColors.card }]}>
+        <Text style={[styles.summaryTitle, { color: safeColors.text }]}>
           {incidents.length} Incidents Reported
         </Text>
-        <Text style={[styles.summarySubtitle, { color: colors.secondary }]}>
+        <Text style={[styles.summarySubtitle, { color: safeColors.secondary }]}>
           Click markers for details
         </Text>
       </View>
