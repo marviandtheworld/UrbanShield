@@ -100,3 +100,5 @@ SELECT COUNT(*) as count FROM get_incidents_with_user_info();
 
 
 
+
+

@@ -49,6 +49,13 @@ export const Colors = {
     warning: '#f59e0b',
     error: '#ef4444',
     info: '#3b82f6',
+    // Additional colors for better UI
+    textSecondary: '#9BA1A6',
+    textMuted: '#737373',
+    backgroundSecondary: '#1a1a1a',
+    backgroundTertiary: '#262626',
+    accent: '#1a1a1a',
+    accentBorder: '#262626',
   },
 };
 
