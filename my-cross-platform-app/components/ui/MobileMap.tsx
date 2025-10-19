@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 
-// Dynamic import for react-native-maps
+// Dynamic import for react-native-maps - only on mobile platforms
 let MapView: any;
 let Marker: any;
 let PROVIDER_GOOGLE: any;
@@ -11,9 +11,9 @@ let PROVIDER_DEFAULT: any;
 let Region: any;
 let mapsAvailable = false;
 
-// Try to load react-native-maps with better error handling
-try {
-  if (Platform.OS !== 'web') {
+// Only try to load react-native-maps on mobile platforms
+if (Platform.OS !== 'web') {
+  try {
     const Maps = require('react-native-maps');
     MapView = Maps.default;
     Marker = Maps.Marker;
@@ -22,12 +22,12 @@ try {
     Region = Maps.Region;
     mapsAvailable = true;
     console.log('✅ React Native Maps loaded successfully');
-  } else {
-    console.log('ℹ️ React Native Maps skipped on web platform');
+  } catch (error: any) {
+    console.warn('⚠️ React Native Maps not available:', error.message);
     mapsAvailable = false;
   }
-} catch (error: any) {
-  console.warn('⚠️ React Native Maps not available:', error.message);
+} else {
+  console.log('ℹ️ React Native Maps skipped on web platform');
   mapsAvailable = false;
 }
 

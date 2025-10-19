@@ -17,6 +17,8 @@ import {
 import { Colors } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { supabase } from '../../lib/supabase';
+import MediaThumbnail from './MediaThumbnail';
+import MediaViewer from './MediaViewer';
 
 interface UserProfile {
   id: string;
@@ -36,6 +38,18 @@ interface Comment {
   user_type: string;
 }
 
+interface MediaAttachment {
+  id: string;
+  file_url: string;
+  thumbnail_url?: string;
+  media_type: 'image' | 'video';
+  file_size?: number;
+  duration?: number;
+  width?: number;
+  height?: number;
+  mime_type?: string;
+}
+
 interface Incident {
   id: string;
   title: string;
@@ -49,6 +63,8 @@ interface Incident {
   is_urgent: boolean;
   is_rescue?: boolean;  // Local data only - not stored in database
   images?: string[];
+  media_attachments?: MediaAttachment[];  // New field for structured media data
+  media_count?: number;  // New field for media count
   views: number;
   likes: number;
   comments_count: number;
@@ -82,6 +98,9 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [loadingComments, setLoadingComments] = useState<Set<string>>(new Set());
   const [likedIncidents, setLikedIncidents] = useState<Set<string>>(new Set()); // Track liked incidents
+  const [showMediaViewer, setShowMediaViewer] = useState(false);
+  const [selectedMediaItems, setSelectedMediaItems] = useState<MediaAttachment[]>([]);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 
   const colors = Colors[isDark ? 'dark' : 'light'];
 
@@ -526,6 +545,14 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
     }
   };
 
+  const handleMediaPress = (incident: Incident) => {
+    if (incident.media_attachments && incident.media_attachments.length > 0) {
+      setSelectedMediaItems(incident.media_attachments);
+      setSelectedMediaIndex(0);
+      setShowMediaViewer(true);
+    }
+  };
+
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -658,7 +685,13 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
           filteredIncidents.map((incident) => (
             <View key={incident.id} style={[styles.incidentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={[styles.incidentImageContainer, { backgroundColor: colors.surface }]}>
-                {incident.images && incident.images.length > 0 ? (
+                {incident.media_attachments && incident.media_attachments.length > 0 ? (
+                  <MediaThumbnail
+                    mediaItems={incident.media_attachments}
+                    onPress={() => handleMediaPress(incident)}
+                    maxThumbnails={4}
+                  />
+                ) : incident.images && incident.images.length > 0 ? (
                   <Image 
                     source={{ uri: incident.images[0] }} 
                     style={styles.incidentImage}
@@ -690,22 +723,28 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
                   <Ionicons name="eye" size={14} color="#fff" />
                   <Text style={styles.viewBadgeText}> {incident.views}</Text>
                 </View>
-                {incident.is_urgent && (
-                  <View style={[styles.urgentBadge, { backgroundColor: colors.error }]}>
-                    <Text style={styles.urgentText}>URGENT</Text>
-                  </View>
-                )}
-                {rescueIncidents.has(incident.id) && (
-                  <View style={[styles.rescueBadge, { backgroundColor: colors.warning }]}>
-                    <Text style={styles.rescueText}>RESCUE</Text>
-                  </View>
-                )}
-                {incident.is_verified && (
-                  <View style={[styles.verifiedBadge, { backgroundColor: '#22c55e' }]}>
-                    <Ionicons name="checkmark-circle" size={12} color="#fff" />
-                    <Text style={styles.verifiedText}>VERIFIED</Text>
-                  </View>
-                )}
+                <View style={styles.badgeContainer}>
+                  {incident.is_urgent && (
+                    <View style={[styles.urgentBadge, { backgroundColor: colors.error }]}>
+                      <Text style={styles.urgentText}>URGENT</Text>
+                    </View>
+                  )}
+                  {rescueIncidents.has(incident.id) && (
+                    <View style={[styles.rescueBadge, { backgroundColor: colors.warning }]}>
+                      <Text style={styles.rescueText}>RESCUE NEEDED</Text>
+                    </View>
+                  )}
+                  {incident.is_verified ? (
+                    <View style={[styles.verifiedBadge, { backgroundColor: '#22c55e' }]}>
+                      <Ionicons name="checkmark-circle" size={12} color="#fff" />
+                      <Text style={styles.verifiedText}>VERIFIED</Text>
+                    </View>
+                  ) : (
+                    <View style={[styles.unverifiedBadge, { backgroundColor: colors.secondary }]}>
+                      <Text style={styles.unverifiedText}>UNVERIFIED</Text>
+                    </View>
+                  )}
+                </View>
               </View>
 
               <View style={styles.incidentContent}>
@@ -918,6 +957,14 @@ const NewsView: React.FC<NewsViewProps> = ({ session, userProfile, onAuthRequire
           </View>
         </View>
       </Modal>
+
+      {/* Media Viewer Modal */}
+      <MediaViewer
+        mediaItems={selectedMediaItems}
+        visible={showMediaViewer}
+        onClose={() => setShowMediaViewer(false)}
+        initialIndex={selectedMediaIndex}
+      />
     </View>
   );
 };
@@ -1006,9 +1053,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   urgentBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1019,9 +1063,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   rescueBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1032,9 +1073,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   verifiedBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 6,
@@ -1046,6 +1084,26 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     marginLeft: 2,
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  unverifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  unverifiedText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   severityBadge: {
     paddingHorizontal: 8,

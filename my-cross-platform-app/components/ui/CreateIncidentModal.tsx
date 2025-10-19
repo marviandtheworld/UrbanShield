@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
-// import * as VideoThumbnails from 'expo-video-thumbnails';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
@@ -71,6 +72,11 @@ export default function CreateIncidentModal({
     uri: string;
     type: 'image' | 'video';
     thumbnail?: string;
+    fileSize?: number;
+    duration?: number;
+    width?: number;
+    height?: number;
+    mimeType?: string;
   }>>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
 
@@ -128,6 +134,10 @@ export default function CreateIncidentModal({
           const newMedia = {
             uri: asset.uri,
             type: 'image' as const,
+            fileSize: asset.fileSize,
+            width: asset.width,
+            height: asset.height,
+            mimeType: 'image/jpeg',
           };
 
           setMediaFiles(prev => [...prev, newMedia]);
@@ -146,6 +156,10 @@ export default function CreateIncidentModal({
           const newMedia = {
             uri: asset.uri,
             type: 'image' as const,
+            fileSize: asset.fileSize,
+            width: asset.width,
+            height: asset.height,
+            mimeType: 'image/jpeg',
           };
 
           setMediaFiles(prev => [...prev, newMedia]);
@@ -179,12 +193,22 @@ export default function CreateIncidentModal({
             uri: string;
             type: 'image' | 'video';
             thumbnail?: string;
+            fileSize?: number;
+            duration?: number;
+            width?: number;
+            height?: number;
+            mimeType?: string;
           } = {
             uri: asset.uri,
             type: 'video' as const,
+            fileSize: asset.fileSize,
+            duration: asset.duration ? Math.round(asset.duration / 1000) : undefined,
+            width: asset.width,
+            height: asset.height,
+            mimeType: 'video/mp4',
           };
 
-          // For videos, use the video URI as thumbnail for now
+          // For web, use the video URI as thumbnail
           newMedia.thumbnail = asset.uri;
 
           setMediaFiles(prev => [...prev, newMedia]);
@@ -205,13 +229,32 @@ export default function CreateIncidentModal({
             uri: string;
             type: 'image' | 'video';
             thumbnail?: string;
+            fileSize?: number;
+            duration?: number;
+            width?: number;
+            height?: number;
+            mimeType?: string;
           } = {
             uri: asset.uri,
             type: 'video' as const,
+            fileSize: asset.fileSize,
+            duration: asset.duration ? Math.round(asset.duration / 1000) : undefined,
+            width: asset.width,
+            height: asset.height,
+            mimeType: 'video/mp4',
           };
 
-          // For videos, use the video URI as thumbnail for now
-          newMedia.thumbnail = asset.uri;
+          // Generate thumbnail for video
+          try {
+            const thumbnail = await VideoThumbnails.getThumbnailAsync(asset.uri, {
+              time: 1000, // 1 second into the video
+              quality: 0.8,
+            });
+            newMedia.thumbnail = thumbnail.uri;
+          } catch (error) {
+            console.warn('Failed to generate video thumbnail:', error);
+            newMedia.thumbnail = asset.uri;
+          }
 
           setMediaFiles(prev => [...prev, newMedia]);
         }
@@ -226,38 +269,158 @@ export default function CreateIncidentModal({
     setMediaFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const uploadMediaToSupabase = async (uri: string, mediaType: 'image' | 'video' = 'image'): Promise<string | null> => {
+  const uploadMediaToSupabase = async (mediaFile: {
+    uri: string;
+    type: 'image' | 'video';
+    thumbnail?: string;
+    fileSize?: number;
+    duration?: number;
+    width?: number;
+    height?: number;
+    mimeType?: string;
+  }): Promise<{ fileUrl: string; thumbnailUrl?: string } | null> => {
     try {
       setUploadingMedia(true);
       
       // Create a unique filename with proper extension
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(7);
-      const extension = mediaType === 'video' ? 'mp4' : 'jpg';
+      const extension = mediaFile.type === 'video' ? 'mp4' : 'jpg';
       const filename = `incident_media_${timestamp}_${randomId}.${extension}`;
       
-      console.log('📤 Uploading media:', { uri, mediaType, filename });
+      console.log('📤 Uploading media:', { 
+        uri: mediaFile.uri, 
+        type: mediaFile.type, 
+        filename,
+        platform: Platform.OS 
+      });
       
-      // Read the file
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      // For React Native, we need to use a different approach
+      let fileData;
+      const contentType = mediaFile.mimeType || (mediaFile.type === 'video' ? 'video/mp4' : 'image/jpeg');
       
-      // Determine content type based on media type
-      const contentType = mediaType === 'video' ? 'video/mp4' : 'image/jpeg';
+      if (Platform.OS === 'web') {
+        // Web: use fetch and blob
+        const response = await fetch(mediaFile.uri);
+        fileData = await response.blob();
+        console.log('📤 Web blob created:', fileData.size, 'bytes');
+      } else {
+        // React Native: try multiple approaches for file reading
+        try {
+          console.log('📤 Reading file with expo-file-system:', mediaFile.uri);
+          
+          // First, check if file exists and get info
+          const fileInfo = await FileSystem.getInfoAsync(mediaFile.uri);
+          console.log('📁 File info:', fileInfo);
+          
+          if (!fileInfo.exists) {
+            throw new Error('File does not exist at the specified URI');
+          }
+          
+          // Read file as base64
+          const base64 = await FileSystem.readAsStringAsync(mediaFile.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          
+          if (!base64) {
+            throw new Error('Failed to read file content');
+          }
+          
+          // Convert base64 to blob
+          const byteCharacters = atob(base64);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          
+          // Create blob from byte array
+          fileData = new Blob([byteArray], { type: contentType });
+          console.log('📤 React Native file created from base64:', fileData.size, 'bytes');
+        } catch (error) {
+          console.error('❌ Error reading file with expo-file-system:', error);
+          // Fallback: try fetch approach
+          try {
+            console.log('📤 Trying fetch fallback for:', mediaFile.uri);
+            const response = await fetch(mediaFile.uri);
+            
+            if (!response.ok) {
+              throw new Error(`Fetch failed with status: ${response.status}`);
+            }
+            
+            const arrayBuffer = await response.arrayBuffer();
+            fileData = new Blob([arrayBuffer], { type: contentType });
+            console.log('📤 React Native fallback blob created:', fileData.size, 'bytes');
+          } catch (fetchError) {
+            console.error('❌ Error with fetch fallback:', fetchError);
+            // Final fallback: try using FormData
+            try {
+              console.log('📤 Trying FormData approach...');
+              const formData = new FormData();
+              formData.append('file', {
+                uri: mediaFile.uri,
+                type: contentType,
+                name: filename,
+              } as any);
+              
+              // For FormData, we need to handle it differently
+              const response = await fetch(mediaFile.uri);
+              const blob = await response.blob();
+              fileData = blob;
+              console.log('📤 FormData blob created:', fileData.size, 'bytes');
+            } catch (formDataError) {
+              console.error('❌ All file reading methods failed:', formDataError);
+              return null;
+            }
+          }
+        }
+      }
       
-      console.log('📤 Upload details:', { filename, contentType, blobSize: blob.size });
+      console.log('📤 Upload details:', { 
+        filename, 
+        contentType, 
+        fileSize: fileData.size,
+        fileType: typeof fileData 
+      });
       
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
+      // Validate file data before upload
+      if (!fileData || fileData.size === 0) {
+        console.error('❌ Invalid file data: empty or null');
+        return null;
+      }
+      
+      // Check file size limit (50MB)
+      const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+      if (fileData.size > maxSize) {
+        console.error('❌ File too large:', fileData.size, 'bytes (max:', maxSize, ')');
+        return null;
+      }
+      
+      // Upload to Supabase Storage with timeout
+      const uploadPromise = supabase.storage
         .from('incident-media')
-        .upload(filename, blob, {
+        .upload(filename, fileData, {
           contentType,
           upsert: false, // Don't overwrite existing files
         });
+      
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Upload timeout after 30 seconds')), 30000);
+      });
+      
+      const { data, error } = await Promise.race([uploadPromise, timeoutPromise]) as any;
 
       if (error) {
         console.error('❌ Upload error:', error);
         console.error('❌ Error details:', error.message);
+        console.error('❌ Error code:', (error as any).statusCode);
+        console.error('❌ Error context:', {
+          filename,
+          contentType,
+          fileSize: fileData.size,
+          bucket: 'incident-media'
+        });
         return null;
       }
 
@@ -273,19 +436,115 @@ export default function CreateIncidentModal({
       // Test if the URL is accessible
       try {
         const testResponse = await fetch(publicUrl, { method: 'HEAD' });
-        if (testResponse.ok) {
-          console.log('✅ URL is accessible');
-          return publicUrl;
-        } else {
+        if (!testResponse.ok) {
           console.error('❌ URL not accessible:', testResponse.status);
           return null;
         }
+        console.log('✅ URL is accessible');
       } catch (testError) {
         console.error('❌ URL test failed:', testError);
         return null;
       }
+
+      // Upload thumbnail if it exists (for videos)
+      let thumbnailUrl: string | undefined;
+      if (mediaFile.thumbnail && mediaFile.type === 'video') {
+        try {
+          const thumbnailFilename = `thumbnail_${timestamp}_${randomId}.jpg`;
+          console.log('📤 Uploading thumbnail:', thumbnailFilename);
+          
+          let thumbnailData;
+          if (Platform.OS === 'web') {
+            const thumbnailResponse = await fetch(mediaFile.thumbnail);
+            thumbnailData = await thumbnailResponse.blob();
+          } else {
+            try {
+              console.log('📤 Reading thumbnail with expo-file-system:', mediaFile.thumbnail);
+              
+              // First, check if thumbnail exists and get info
+              const thumbnailInfo = await FileSystem.getInfoAsync(mediaFile.thumbnail);
+              console.log('📁 Thumbnail info:', thumbnailInfo);
+              
+              if (!thumbnailInfo.exists) {
+                throw new Error('Thumbnail file does not exist at the specified URI');
+              }
+              
+              // Read thumbnail as base64
+              const base64 = await FileSystem.readAsStringAsync(mediaFile.thumbnail, {
+                encoding: FileSystem.EncodingType.Base64,
+              });
+              
+              if (!base64) {
+                throw new Error('Failed to read thumbnail content');
+              }
+              
+              // Convert base64 to blob
+              const byteCharacters = atob(base64);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              
+              // Create blob from byte array
+              thumbnailData = new Blob([byteArray], { type: 'image/jpeg' });
+              console.log('📤 Thumbnail created from base64:', thumbnailData.size, 'bytes');
+            } catch (error) {
+              console.error('❌ Error reading thumbnail with expo-file-system:', error);
+              // Fallback: try fetch approach
+              try {
+                console.log('📤 Trying fetch fallback for thumbnail:', mediaFile.thumbnail);
+                const thumbnailResponse = await fetch(mediaFile.thumbnail);
+                
+                if (!thumbnailResponse.ok) {
+                  throw new Error(`Thumbnail fetch failed with status: ${thumbnailResponse.status}`);
+                }
+                
+                const thumbnailArrayBuffer = await thumbnailResponse.arrayBuffer();
+                thumbnailData = new Blob([thumbnailArrayBuffer], { type: 'image/jpeg' });
+                console.log('📤 Thumbnail fallback blob created:', thumbnailData.size, 'bytes');
+              } catch (fetchError) {
+                console.error('❌ Error with thumbnail fetch fallback:', fetchError);
+                // Final fallback: try using FormData
+                try {
+                  console.log('📤 Trying FormData approach for thumbnail...');
+                  const response = await fetch(mediaFile.thumbnail);
+                  const blob = await response.blob();
+                  thumbnailData = blob;
+                  console.log('📤 Thumbnail FormData blob created:', thumbnailData.size, 'bytes');
+                } catch (formDataError) {
+                  console.error('❌ All thumbnail reading methods failed:', formDataError);
+                  return null;
+                }
+              }
+            }
+          }
+          
+          const { data: thumbnailDataResult, error: thumbnailError } = await supabase.storage
+            .from('incident-media')
+            .upload(thumbnailFilename, thumbnailData, {
+              contentType: 'image/jpeg',
+              upsert: false,
+            });
+
+          if (!thumbnailError) {
+            const { data: { publicUrl: thumbnailPublicUrl } } = supabase.storage
+              .from('incident-media')
+              .getPublicUrl(thumbnailFilename);
+            thumbnailUrl = thumbnailPublicUrl;
+            console.log('✅ Thumbnail uploaded:', thumbnailPublicUrl);
+          } else {
+            console.warn('⚠️ Thumbnail upload failed:', thumbnailError);
+          }
+        } catch (thumbnailError) {
+          console.warn('⚠️ Thumbnail upload error:', thumbnailError);
+        }
+      }
+
+      return { fileUrl: publicUrl, thumbnailUrl };
     } catch (error) {
       console.error('❌ Error uploading media:', error);
+      console.error('❌ Error stack:', (error as any).stack);
       return null;
     } finally {
       setUploadingMedia(false);
@@ -477,18 +736,50 @@ export default function CreateIncidentModal({
       
       // Upload media files if any
       let uploadedMediaUrls: string[] = [];
+      let mediaAttachments: any[] = [];
       if (mediaFiles.length > 0) {
         console.log('📸 Uploading media files...');
-        for (const mediaFile of mediaFiles) {
-          const uploadedUrl = await uploadMediaToSupabase(mediaFile.uri, mediaFile.type);
-          if (uploadedUrl) {
-            uploadedMediaUrls.push(uploadedUrl);
-            console.log('✅ Media uploaded:', uploadedUrl);
-          } else {
-            console.error('❌ Failed to upload media:', mediaFile.uri);
+        let uploadErrors = 0;
+        
+        for (let i = 0; i < mediaFiles.length; i++) {
+          const mediaFile = mediaFiles[i];
+          console.log(`📤 Uploading media ${i + 1}/${mediaFiles.length}:`, {
+            uri: mediaFile.uri,
+            type: mediaFile.type,
+            size: mediaFile.fileSize
+          });
+          
+          try {
+            const uploadResult = await uploadMediaToSupabase(mediaFile);
+            if (uploadResult) {
+              uploadedMediaUrls.push(uploadResult.fileUrl);
+              mediaAttachments.push({
+                file_url: uploadResult.fileUrl,
+                thumbnail_url: uploadResult.thumbnailUrl,
+                media_type: mediaFile.type,
+                file_size: mediaFile.fileSize,
+                duration: mediaFile.duration,
+                width: mediaFile.width,
+                height: mediaFile.height,
+                mime_type: mediaFile.mimeType,
+              });
+              console.log('✅ Media uploaded:', uploadResult.fileUrl);
+            } else {
+              console.error('❌ Failed to upload media:', mediaFile.uri);
+              uploadErrors++;
+            }
+          } catch (error) {
+            console.error('❌ Upload error for media:', mediaFile.uri, error);
+            uploadErrors++;
           }
         }
-        console.log('✅ Media upload complete:', uploadedMediaUrls.length, 'files uploaded');
+        
+        console.log('✅ Media upload complete:', uploadedMediaUrls.length, 'files uploaded,', uploadErrors, 'errors');
+        
+        // If all uploads failed, show warning but continue
+        if (uploadErrors === mediaFiles.length) {
+          console.warn('⚠️ All media uploads failed, continuing without media');
+        }
       }
       
       const insertData = {
@@ -536,6 +827,28 @@ export default function CreateIncidentModal({
       }
 
       console.log('✅ Insert successful:', data);
+
+      // Save media attachments to the database
+      if (mediaAttachments.length > 0 && data && data[0]) {
+        console.log('💾 Saving media attachments...');
+        const incidentId = data[0].id;
+        
+        const mediaInsertData = mediaAttachments.map(attachment => ({
+          incident_id: incidentId,
+          ...attachment
+        }));
+
+        const { error: mediaError } = await supabase
+          .from('media_attachments')
+          .insert(mediaInsertData);
+
+        if (mediaError) {
+          console.error('❌ Media attachments insert error:', mediaError);
+          // Don't fail the whole operation, just log the error
+        } else {
+          console.log('✅ Media attachments saved successfully');
+        }
+      }
 
       const successMessage = 'Your report has been submitted and is now live! Admin can verify it later.';
       

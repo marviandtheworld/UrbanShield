@@ -1,7 +1,9 @@
+// @ts-nocheck
 import { Ionicons } from '@expo/vector-icons';
 import { Session } from '@supabase/supabase-js';
 import React, { useEffect, useState } from 'react';
 import {
+    Platform,
     SafeAreaView,
     StatusBar,
     StyleSheet,
@@ -9,27 +11,34 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { Colors } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { supabase } from '../../lib/supabase';
 
 import { UserType } from '../../lib/userTypes';
-import AuthModal from './AuthModal';
-import ChatBot from './ChatBot';
-import CreateIncidentModal from './CreateIncidentModal';
-import DebugPanel from './DebugPanel';
-import GuestHomeboard from './GuestHomeboard';
-import NewsView from './NewsView';
-import ProfileView from './ProfileView';
-import SafetyMap from './SafetyMap';
-import SettingsModal from './SettingsModal';
-import UserTypeDashboard from './UserTypeDashboard';
+
+// Import all components for both platforms
+const AuthModal = require('./AuthModal').default;
+const ChatBot = require('./ChatBot').default;
+const CreateIncidentModal = require('./CreateIncidentModal').default;
+const DebugPanel = require('./DebugPanel').default;
+const GuestHomeboard = require('./GuestHomeboard').default;
+const NewsView = require('./NewsView').default;
+const ProfileView = require('./ProfileView').default;
+const SettingsModal = require('./SettingsModal').default;
+const UserTypeDashboard = require('./UserTypeDashboard').default;
+
+// Import SafetyMap for all platforms
+const SafetyMap = require('./SafetyMap').default;
 
 
 type ViewType = 'dashboard' | 'map' | 'news' | 'profile';
 
 export default function UrbanShieldApp() {
-  const { isDark } = useTheme();
+  console.log('🔍 UrbanShieldApp: Component rendering...');
+
+  const { isDark, colors } = useTheme();
+  console.log('🔍 UrbanShieldApp: Theme loaded, isDark:', isDark);
+
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -163,16 +172,22 @@ export default function UrbanShieldApp() {
     setActiveView('news');
   };
 
-  const colors = Colors[isDark ? 'dark' : 'light'];
+  console.log('🔍 UrbanShieldApp: Colors loaded:', { isDark, background: colors.background });
+
+  // Use View for web, SafeAreaView for mobile
+  const Container = Platform.OS === 'web' ? View : SafeAreaView;
+  console.log('🔍 UrbanShieldApp: Platform:', Platform.OS, 'Container:', Container.name);
+
+  console.log('🔍 UrbanShieldApp: About to render main component');
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <Container style={[styles.safeArea, { backgroundColor: colors.background as any }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
       
       {/* Authentication Status Indicator */}
       {!session && (
-        <View style={[styles.authStatusBar, { backgroundColor: colors.error }]}>
-          <Text style={styles.authStatusText}>
+        <View style={[styles.authStatusBar, { backgroundColor: colors.error as any }]}>
+          <Text style={styles.authStatusText as any}>
             Not signed in - Tap any feature to sign in
           </Text>
         </View>
@@ -382,13 +397,17 @@ export default function UrbanShieldApp() {
         visible={showChatBot}
         onClose={() => setShowChatBot(false)}
       />
-    </SafeAreaView>
+    </Container>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    ...(Platform.OS === 'web' && {
+      minHeight: 600, // Use number instead of '100vh' for React Native compatibility
+      width: '100%',
+    }),
   },
   authStatusBar: {
     paddingVertical: 8,

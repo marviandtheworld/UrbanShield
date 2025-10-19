@@ -4,9 +4,8 @@ import { Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpa
 import { useTheme } from '../../contexts/ThemeContext';
 import LocationService, { LocationData } from '../../lib/locationService';
 import { supabase } from '../../lib/supabase';
-import MobileMap from './MobileMap';
+import WebMapEnhanced from './WebMapEnhanced';
 import WebMapFallback from './WebMapFallback';
-import WebMapLeaflet from './WebMapLeaflet';
 
 const { width, height } = Dimensions.get('window');
 
@@ -302,100 +301,7 @@ const SafetyMap: React.FC<SafetyMapProps> = ({
   if (Platform.OS === 'web') {
     return (
       <>
-        <WebMapLeaflet
-        incidents={incidents}
-          onIncidentSelect={handleIncidentSelect}
-        userLocation={userLocation}
-        initialRegion={initialRegion}
-      />
-        {selectedIncident && (
-          <Modal
-            visible={modalVisible}
-            animationType="slide"
-            presentationStyle="pageSheet"
-            onRequestClose={() => setModalVisible(false)}
-          >
-            <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Ionicons name="close" size={24} color={colors.text} />
-                </TouchableOpacity>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Incident Details</Text>
-              </View>
-              
-              <ScrollView style={styles.modalContent}>
-                <View style={[styles.incidentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <View style={styles.incidentHeader}>
-                    <View style={[
-                      styles.categoryIcon,
-                      { backgroundColor: getCategoryColor(selectedIncident.category) }
-                    ]}>
-                      <Ionicons 
-                        name={getCategoryIcon(selectedIncident.category) as any} 
-                        size={24} 
-                        color="#fff" 
-                      />
-                    </View>
-                    <View style={styles.incidentInfo}>
-                      <Text style={[styles.incidentTitle, { color: colors.text }]}>
-                        {selectedIncident.title}
-                      </Text>
-                      <Text style={[styles.incidentCategory, { color: colors.secondary }]}>
-                        {selectedIncident.category} • {selectedIncident.severity}
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  <Text style={[styles.incidentDescription, { color: colors.text }]}>
-                    {selectedIncident.description}
-                  </Text>
-                  
-                  <View style={styles.incidentDetails}>
-                    <View style={styles.detailRow}>
-                      <Ionicons name="location" size={16} color={colors.secondary} />
-                      <Text style={[styles.detailText, { color: colors.text }]}>
-                        {selectedIncident.address}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.detailRow}>
-                      <Ionicons name="time" size={16} color={colors.secondary} />
-                      <Text style={[styles.detailText, { color: colors.text }]}>
-                        {new Date(selectedIncident.created_at).toLocaleString()}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.detailRow}>
-                      <Ionicons name="eye" size={16} color={colors.secondary} />
-                      <Text style={[styles.detailText, { color: colors.text }]}>
-                        {selectedIncident.views} views
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.detailRow}>
-                      <Ionicons name="heart" size={16} color={colors.secondary} />
-                      <Text style={[styles.detailText, { color: colors.text }]}>
-                        {selectedIncident.likes} likes
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </ScrollView>
-            </View>
-          </Modal>
-        )}
-      </>
-    );
-  }
-
-  // For mobile platforms, try MobileMap first, fallback to WebMapFallback
-  try {
-    return (
-      <>
-        <MobileMap
+        <WebMapEnhanced
           incidents={incidents}
           onIncidentSelect={handleIncidentSelect}
           userLocation={userLocation}
@@ -482,14 +388,201 @@ const SafetyMap: React.FC<SafetyMapProps> = ({
         )}
       </>
     );
-  } catch (error) {
-    console.warn('MobileMap failed, using fallback:', error);
-  return (
-    <WebMapFallback 
-      incidents={incidents}
-        onIncidentSelect={handleIncidentSelect}
-    />
-  );
+  }
+
+  // Use WebMapEnhanced for web, MobileMapConditional for mobile
+  if (Platform.OS === 'web') {
+    return (
+      <>
+        <WebMapEnhanced
+          incidents={incidents}
+          onIncidentSelect={handleIncidentSelect}
+          userLocation={userLocation}
+          initialRegion={initialRegion}
+        />
+        {selectedIncident && (
+          <Modal
+            visible={modalVisible}
+            animationType="slide"
+            presentationStyle="pageSheet"
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Ionicons name="close" size={24} color={colors.text} />
+                </TouchableOpacity>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Incident Details</Text>
+              </View>
+              
+              <ScrollView style={styles.modalContent}>
+                <View style={[styles.incidentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={styles.incidentHeader}>
+                    <View style={[
+                      styles.categoryIcon,
+                      { backgroundColor: getCategoryColor(selectedIncident.category) }
+                    ]}>
+                      <Ionicons 
+                        name={getCategoryIcon(selectedIncident.category) as any} 
+                        size={24} 
+                        color="#fff" 
+                      />
+                    </View>
+                    <View style={styles.incidentInfo}>
+                      <Text style={[styles.incidentTitle, { color: colors.text }]}>
+                        {selectedIncident.title}
+                      </Text>
+                      <Text style={[styles.incidentCategory, { color: colors.secondary }]}>
+                        {selectedIncident.category} • {selectedIncident.severity}
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  <Text style={[styles.incidentDescription, { color: colors.text }]}>
+                    {selectedIncident.description}
+                  </Text>
+                  
+                  <View style={styles.incidentDetails}>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="location" size={16} color={colors.secondary} />
+                      <Text style={[styles.detailText, { color: colors.text }]}>
+                        {selectedIncident.address}
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.detailRow}>
+                      <Ionicons name="time" size={16} color={colors.secondary} />
+                      <Text style={[styles.detailText, { color: colors.text }]}>
+                        {new Date(selectedIncident.created_at).toLocaleString()}
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.detailRow}>
+                      <Ionicons name="eye" size={16} color={colors.secondary} />
+                      <Text style={[styles.detailText, { color: colors.text }]}>
+                        {selectedIncident.views} views
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.detailRow}>
+                      <Ionicons name="heart" size={16} color={colors.secondary} />
+                      <Text style={[styles.detailText, { color: colors.text }]}>
+                        {selectedIncident.likes} likes
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </ScrollView>
+            </View>
+          </Modal>
+        )}
+      </>
+    );
+  } else {
+    // For mobile, use MobileMapConditional
+    try {
+      const MobileMapConditional = require('./MobileMapConditional').default;
+      return (
+        <>
+          <MobileMapConditional
+            incidents={incidents}
+            onIncidentSelect={handleIncidentSelect}
+            userLocation={userLocation}
+            initialRegion={initialRegion}
+          />
+          {selectedIncident && (
+            <Modal
+              visible={modalVisible}
+              animationType="slide"
+              presentationStyle="pageSheet"
+              onRequestClose={() => setModalVisible(false)}
+            >
+              <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+                <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setModalVisible(false)}
+                  >
+                    <Ionicons name="close" size={24} color={colors.text} />
+                  </TouchableOpacity>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>Incident Details</Text>
+                </View>
+                
+                <ScrollView style={styles.modalContent}>
+                  <View style={[styles.incidentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <View style={styles.incidentHeader}>
+                      <View style={[
+                        styles.categoryIcon,
+                        { backgroundColor: getCategoryColor(selectedIncident.category) }
+                      ]}>
+                        <Ionicons 
+                          name={getCategoryIcon(selectedIncident.category) as any} 
+                          size={24} 
+                          color="#fff" 
+                        />
+                      </View>
+                      <View style={styles.incidentInfo}>
+                        <Text style={[styles.incidentTitle, { color: colors.text }]}>
+                          {selectedIncident.title}
+                        </Text>
+                        <Text style={[styles.incidentCategory, { color: colors.secondary }]}>
+                          {selectedIncident.category} • {selectedIncident.severity}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <Text style={[styles.incidentDescription, { color: colors.text }]}>
+                      {selectedIncident.description}
+                    </Text>
+                    
+                    <View style={styles.incidentDetails}>
+                      <View style={styles.detailRow}>
+                        <Ionicons name="location" size={16} color={colors.secondary} />
+                        <Text style={[styles.detailText, { color: colors.text }]}>
+                          {selectedIncident.address}
+                        </Text>
+                      </View>
+                      
+                      <View style={styles.detailRow}>
+                        <Ionicons name="time" size={16} color={colors.secondary} />
+                        <Text style={[styles.detailText, { color: colors.text }]}>
+                          {new Date(selectedIncident.created_at).toLocaleString()}
+                        </Text>
+                      </View>
+                      
+                      <View style={styles.detailRow}>
+                        <Ionicons name="eye" size={16} color={colors.secondary} />
+                        <Text style={[styles.detailText, { color: colors.text }]}>
+                          {selectedIncident.views} views
+                        </Text>
+                      </View>
+                      
+                      <View style={styles.detailRow}>
+                        <Ionicons name="heart" size={16} color={colors.secondary} />
+                        <Text style={[styles.detailText, { color: colors.text }]}>
+                          {selectedIncident.likes} likes
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </ScrollView>
+              </View>
+            </Modal>
+          )}
+        </>
+      );
+    } catch (error) {
+      console.warn('MobileMapConditional failed, using fallback:', error);
+      return (
+        <WebMapFallback 
+          incidents={incidents}
+          onIncidentSelect={handleIncidentSelect}
+        />
+      );
+    }
   }
 };
 

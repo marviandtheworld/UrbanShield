@@ -61,10 +61,11 @@ class LocationService {
         };
       }
 
+      // Try to get the most accurate location possible
       const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-        timeInterval: 10000,
-        distanceInterval: 10,
+        accuracy: Location.Accuracy.BestForNavigation,
+        timeInterval: 5000,
+        distanceInterval: 1,
       });
 
       const locationData: LocationData = {
@@ -127,8 +128,8 @@ class LocationService {
           },
           {
             enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 10000
+            timeout: 20000,
+            maximumAge: 5000
           }
         );
       });
