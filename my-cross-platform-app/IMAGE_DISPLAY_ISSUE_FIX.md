@@ -179,5 +179,3 @@ node test-image-display-fix.js
 
 
 
-
-

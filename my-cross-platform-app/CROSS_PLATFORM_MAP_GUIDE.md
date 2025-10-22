@@ -320,5 +320,3 @@ const mapConfig = {
 
 
 
-
-

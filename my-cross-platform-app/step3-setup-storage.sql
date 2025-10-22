@@ -55,5 +55,3 @@ WHERE id = 'incident-media';
 
 
 
-
-

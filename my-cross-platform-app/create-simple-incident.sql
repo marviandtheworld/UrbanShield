@@ -55,5 +55,3 @@ SELECT id, title, created_at FROM incidents ORDER BY created_at DESC LIMIT 1;
 
 
 
-
-

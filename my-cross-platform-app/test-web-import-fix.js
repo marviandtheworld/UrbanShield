@@ -204,5 +204,3 @@ console.log('- Performance optimized for each platform');
 
 
 
-
-

@@ -84,5 +84,3 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
 
-
-

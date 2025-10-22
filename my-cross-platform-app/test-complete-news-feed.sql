@@ -138,5 +138,3 @@ WHERE is_urgent = true;
 
 
 
-
-

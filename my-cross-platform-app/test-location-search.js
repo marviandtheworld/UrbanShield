@@ -165,5 +165,3 @@ console.log('- Distance calculation and boundary enforcement');
 
 
 
-
-
